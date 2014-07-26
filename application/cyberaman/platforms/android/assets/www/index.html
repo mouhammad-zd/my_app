@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>تطبيق سايبر أمان</title>
+        <meta http-equiv="Content-type" content="text/html; charset=utf-8">
+        <!-- WARNING: for iOS 7, remove the width=device-width and height=device-height attributes. See https://issues.apache.org/jira/browse/CB-4323 -->
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <link rel="stylesheet" type="text/css" href="appframework/build/css/icons.css" />
+        <link rel="stylesheet" type="text/css" href="appframework/css/forms.css" />
+        <link rel="stylesheet" type="text/css" href="appframework/css/buttons.css" />
+        <link rel="stylesheet" type="text/css" href="appframework/css/afui.css" />
+        <link rel="stylesheet" type="text/css" href="styles/style.css?v=2" />
+        <script type="text/javascript" charset="utf-8" src="appframework/build/ui/appframework.ui.min.js"></script>
+        <link rel="stylesheet" type="text/css" href="appframework/plugins/css/af.selectBox.css" />
+        <script type="text/javascript" charset="utf-8" src="appframework/plugins/af.selectBox.js"></script>
+        <script type="text/javascript" charset="utf-8" src="appframework/plugins/af.passwordBox.js"></script>
+        <script type="text/javascript" charset="utf-8" src="appframework/plugins/af.touchLayer.js"></script>
+        <script type="text/javascript" charset="utf-8" src="appframework/plugins/af.touchEvents.js"></script>
+        <script>
+            if (!((window.DocumentTouch && document instanceof DocumentTouch) || 'ontouchstart' in window))
+            {
+                var script = document.createElement("script");
+                script.src = "appframework/plugins/af.desktopBrowsers.js";
+                var tag = $("head").append(script);
+            }
+        </script>
+        <script type="text/javascript">
+            $.ui.backButtonText = " ";
+            $.ui.useOSThemes = false;
+            $.ui.splitview = false;//To don't show any menu by default and let showing them or hidding them due events
+            $.ui.autoLaunch = true; //By default, it is set to true and you're app will run right away.  We set it to false to show a splashscreen
+            $.ui.overlayStatusbar = true;
+            $.ui.resetScrollers = false;
+            //$.ui.isAjaxApp=true;
+            //$.feat.nativeTouchScroll=false;
+        </script>
+        <script type="text/javascript" src="cordova.js"></script>
+        <script type="text/javascript" src="js/data.js"></script>
+        <script type="text/javascript" src="js/language.js"></script>
+        <script type="text/javascript" src="js/templates.js"></script>
+        <script type="text/javascript" src="js/events.js"></script>
+        <script type="text/javascript" src="js/callbacks.js"></script>
+        <script type="text/javascript" src="js/pages_loaders.js"></script>
+        <script type="text/javascript" src="js/operations.js"></script>
+        <script type="text/javascript" src="js/ready.js"></script>
+    </head>
+    <body>
+        <div id="afui">
+            <div id="splashscreen" class='ui-loader'>
+                <div style="width: inherit;height: inherit;color: red;">
+                    <h1><br /><br /><br /><img src="images/home_logo.png" /></h1>
+                </div>
+            </div>
+            <div class="app_header" id="warning_header">
+
+            </div>
+            <div id="header">
+                <a href="#" class="icon refresh lfloat" id="refresh_link"> </a>
+                <a href="#" class="icon share lfloat" id="share_link"> </a>
+                <a href="#" onclick="window.open('http://cyberaman.com', '_system');"><span class="head_title" id="head_title">سايبر أمان</span></a>
+                <a href="javascript:$.ui.toggleRightSideMenu()" class="menuButton rfloat"> </a>
+            </div>
+            <div id="content">
+                
+            </div>
+            <aside id="cyberaman_aside">
+                <div class='title'>&nbsp;</div>
+                <ul>
+                    <li>
+                        <a id="aside_new_account_link" href="register.html" data-persist-ajax="true" data-refresh-ajax="false" class="icon add mini">  حساب جديد</a>
+                        <a id="aside_account_link" class="icon mini"  style="padding-right: 15px;">  حسابي</a>
+                        <a id="aside_reporters_link" class="icon mini" style="padding-right: 15px;">  أفضل المراسلين</a>
+                        <a id="aside_settings_link" class="icon star mini">  تفضيلاتي</a>
+                        <a id="aside_sendnews_link" class="icon lamp mini">  أرسل خبر الآن</a>
+                        <a id="aside_share_link" class="icon share mini" style="padding-right: 15px;">  شارك التطبيق مع أصدقاءك</a>
+                        <a id="aside_rate_link" class="icon mini" style="padding-right: 15px;">  هل أعجبك التطبيق ؟</a>
+                        <a id="aside_about_link" class="icon mini" style="padding-right: 15px;" href="about.html" data-persist-ajax="true" data-refresh-ajax="false">  حول سايبر أمان</a>
+                        <a id="aside_contactus_link" class="icon mini" style="padding-right: 15px;">  إتّصل بنا</a>
+                        <a href="#" onclick="window.open('http://www.cyberaman.com', '_system');" class="acenter">
+                            <img src="images/home_logo.png" style="max-width: 90%;" />
+                        </a>
+                        <a id="aside_auditnews_link" class="icon home mini" style="padding-right: 15px;">تدقيق الأخبار</a>
+                        <a id="aside_closeapplication_link" class="icon mini" style="padding-right: 15px;">  إغلاق التطبيق</a>
+                    </li>
+                </ul>
+            </aside>
+        </div>
+    </body>
+</html>
