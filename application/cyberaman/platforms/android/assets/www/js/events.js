@@ -1,44 +1,63 @@
-function ev_device_ready()
+function ev_afui_ready()
+{
+    bind_custom_events();
+    if(g_role === 2)
+        {
+            control_aside_as('admin');
+            load_page("news.html",[false,true,"slide",true]);
+        }
+    else if(g_role === 1)
+        {
+            control_aside_as('user');
+            load_page("news.html",[false,true,"slide",true]);
+        }
+    else
+        {
+            control_aside_as('guest');
+            load_page("main.html",[false,true,"slide",true]);
+        }
+    //$.ui.loadContent("main.html",false,true,"pop",true);
+}
+
+function ev_document_ready()
     {
-        bind_custom_events();
-        //analytics.startTrackerWithId('UA-52344579-1');
-        control_aside_as('guest');
         if(localStorage.getItem('token'))
             {
                 var i = {};
                 i['t'] = localStorage.getItem('token');
                 i['u'] = device.uuid;
+                i['g'] = 1;
                 var data = {op : 'v',i : i};
-                $.ajax({url : g_api_link,data : data,type : "POST",dataType : "json",
+                $.ajax({url : g_api_link,data : data,type : "POST",dataType : "json",timeout: 500000,
                         success : function(data)
                                     {
+                                        $.ui.backButtonText = " ";
+                                        $.ui.launch();
+                                        //analytics.startTrackerWithId('UA-52344579-1');
+                                        control_aside_as('guest');
                                         if(data.s === '1')
                                             {
+                                                store_user_infos(data.i);
                                                 localStorage.setItem('token',data.t);
+                                                g_token = data.t;
                                                 if(data.p === '1')
-                                                    {
                                                         g_role = 2;
-                                                        control_aside_as('admin');
-                                                    }
                                                 else
-                                                    {
                                                         g_role = 1;
-                                                        control_aside_as('user');
-                                                    }
                                             }
                                         else
                                             {
                                                 localStorage.removeItem('token');
-                                                control_aside_as('guest');
                                                 g_role = 0;
                                             }
                                     },
-                        error : function(error){alert(error);console.log(error.responseText);}
+                        error : function(error){alert(error);alert(error.responseText);g_role=0}
                     });
             }
         else
             {
-                control_aside_as('guest');
+                $.ui.backButtonText = " ";
+                $.ui.launch();
                 g_role = 0;
             }
     }
@@ -60,6 +79,7 @@ function ev_button_back()
             }
         else
             {
+                warn_user('#warning_header','',0,0);
                 $.ui.goBack();
             }
     }

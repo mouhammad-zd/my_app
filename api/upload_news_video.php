@@ -20,7 +20,7 @@ $amazone_s3 = false;
 $upload_to_youtube = true;
 $rename_files = true;
 $uploaded_type = $allowed;
-$allowed = array("webm", "3gpp", "mpegps", "mpeg4", "mov", "wmv", "flv", "swf", "rm", "avi", "mp4", "mpeg", "mpg", "youtube", "wma");
+$allowed = array("3gp","webm", "3gpp", "mpegps", "mpeg4", "mov", "wmv", "flv", "swf", "rm", "avi", "mp4", "mpeg", "mpg", "youtube", "wma");
 
 if (!is_dir($path_upload))
     {
@@ -94,7 +94,7 @@ if (isset($_FILES['upl']) && $_FILES['upl']['error'] == 0)
                     }
                 if ($upload_to_youtube)
                     {
-                        $uploaded_file_name = move_video_to_youtube($path_upload . '/' . $uploaded_file_name, $uploaded_file_name,$uploaded_file_name,$uploaded_file_name,"private");
+                        $uploaded_file_name = local_move_video_to_youtube($path_upload . '/' . $uploaded_file_name, $uploaded_file_name,$uploaded_file_name,$uploaded_file_name,"private");
                     }
                 die(json_encode(array("s" => '1', "r" => $uploaded_file_name)));
             }
@@ -106,5 +106,32 @@ if (isset($_FILES['upl']) && $_FILES['upl']['error'] == 0)
 else
     {
         die(json_encode(array("s" => '0',"r" => '1')));
+    }
+    
+function local_move_video_to_youtube($file_path, $uploaded_file_name, $title = " ", $description = " ", $privacy = "public")
+    {
+        global $youtube_api_key, $youtube_username, $youtube_password;
+
+        include('../../includes/uploader/ClassYouTubeAPI.php');
+
+        $obj = new ClassYouTubeAPI($youtube_api_key);
+        $result = $obj->clientLoginAuth($youtube_username, $youtube_password);
+        $result = $obj->uploadVideo($uploaded_file_name, $file_path, $title, $description, $privacy);
+
+        // var_dump($result);
+
+        if (is_array($result) and count($result) and ! isset($result["is_error"])) {
+            $youtube_file = str_replace($uploaded_file_name, $result["videoId"] . '.youtube', $file_path);
+            $resource = fopen($youtube_file, 'w');
+            fwrite($resource, "");
+            fclose($resource);
+
+            @unlink($file_path);
+
+            return $result["videoId"];
+        } else {
+            @unlink($file_path);
+            return false;
+        }
     }
 ?>

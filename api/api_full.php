@@ -33,11 +33,17 @@ function parse_request()
         switch($operation)
             {
                 case 'a':
-                {
-                    if(isset($method['i'])) $result_json = audit_news($method['i']);
-                    else $result_json = json_encode(array("s" => '001'));
-                    break;
-                }    
+                    {
+                        if(isset($method['i'])) $result_json = audit_news($method['i']);
+                        else $result_json = json_encode(array("s" => '001'));
+                        break;
+                    }
+                case 'c':
+                    {
+                        if(isset($method['i'])) $result_json = contact_us($method['i']);
+                        else $result_json = json_encode(array("s" => '001'));
+                        break;
+                    }
                 case 'd':
                     {
                         if(isset($method['i'])) $result_json = get_news_details($method['i']);
@@ -58,12 +64,30 @@ function parse_request()
                     }
                 case 'g_a_a':
                     {
-                        $result_json = get_all_agencies();
+                        if(isset($method['i'])) $result_json = get_all_agencies($method['i']);
+                        else $result_json = json_encode(array("s" => '001'));
                         break;
                     }
                 case 'g_a_c':
                     {
                         $result_json = get_all_categories();
+                        break;
+                    }
+                case 'g_a_d':
+                    {
+                        if(isset($method['i'])) $result_json = get_all_departments($method['i']);
+                        else $result_json = get_all_departments (array("l" => "Arabic"));
+                        break;
+                    }
+                case 'g_l_r':
+                    {
+                        $result_json = get_last_reporters();
+                        break;
+                    }
+                case 'g_u_i':
+                    {
+                        if(isset($method['i'])) $result_json = get_user_infos($method['i']);
+                        else $result_json = json_encode(array("s" => '1',"i" => "-1"));
                         break;
                     }
                 case 'gs':
@@ -96,12 +120,6 @@ function parse_request()
                         else $result_json = json_encode(array("s" => '001'));
                         break;
                     }
-                case 'se':
-                    {
-                        if(isset($method['i'])) $result_json = send_email($method['i']);
-                        else $result_json = json_encode(array("s" => '001'));
-                        break;
-                    }
                 case 'sn':
                     {
                         if(isset($method['i'])) $result_json = send_news($method['i']);
@@ -112,6 +130,13 @@ function parse_request()
                     {
                         if(isset($method['i'])) $result_json = set_user_google_registration_id($method['i']);
                         else $result_json = json_encode(array("s" => '001'));
+                        break;
+                    }
+                case 's_u_i':
+                    {
+                        if(isset($method['i'])) $result_json = set_user_infos($method['i']);
+                        else $result_json = json_encode(array("s" => '001'));
+                        break;
                     }
                 case 'ss':
                     {
@@ -176,7 +201,7 @@ function get_all_categories($categories_infos = array("l"))
         $all_categories_res = $db->get_results("select IdCat as cat_id,CatName as cat_name from languages as l,catlang as cl where l.IdLang = cl.IdLang and l.LangName = '$language' order by `sort`");
         if(count($all_categories_res) > 0)
             {
-                $all_categories = array("s" => 1,"r" => array());
+                $all_categories = array("s" => '1',"r" => array());
                 $index = 0;
                 foreach($all_categories_res as $category_row)
                     {
@@ -209,7 +234,7 @@ function get_all_agencies($user_infos = array("t"))
         
         $is_valid_token_row = $db->get_row("select UserId,concat(UserName,' ',FamName) as full_name,NickName from users where app_token = '$passed_token'");
         
-        if(!is_valid_token_var)
+        if(!$is_valid_token_row)
             {
                 return json_encode(array('s' => '002'));
             }
@@ -223,7 +248,7 @@ function get_all_agencies($user_infos = array("t"))
                 return json_encode(array('s' => '003'));
             }
         
-        $all_agencies = array("s" => 1,"r" => array());
+        $all_agencies = array("s" => '1',"r" => array());
         
         $all_agencies['r'][0] = array("i" => $is_valid_token_row->NickName,"n" => $is_valid_token_row->full_name);
         
@@ -244,9 +269,12 @@ function get_all_agencies($user_infos = array("t"))
             }
     }
     
-// Function that will validate passed token and return a json object
+/// Function that will validate passed token and return a json object
+// @param t : Token to validate
+// @param u : Generate new token and update it on users table(optional)
+// @param g : Gather user infos and return infos in index i(optiona)
 // with index s which contains validation status and t which contains token in the case of token validity
-function is_valid_token($user_infos = array("t","u"))
+function is_valid_token($user_infos = array("t","u","g"))
     {
         global $db;
         if(empty($db))
@@ -257,24 +285,37 @@ function is_valid_token($user_infos = array("t","u"))
         else
             {
                 $passed_token = InputFilter($user_infos['t']);
-                $is_valid_token_row = $db->get_var("select app_token,UserId,NickName,UserMail from users where app_token = '$passed_token'");
+                $is_valid_token_row = $db->get_row("select CellNbr as cell_number,Contry as user_country,app_token,UserId as user_id,NickName as nick_name,UserPic as user_pic,Points as user_points,UserMail as email,concat(UserName,' ',FamName) as full_name from users where app_token = '$passed_token'");
                 if($is_valid_token_row)
                     {
-                        $user_id = $is_valid_token_row->UserId;
-                        $nick_name = $is_valid_token_row->NickName;
-                        $email = $is_valid_token_row->UserMail;
+                        $user_id = $is_valid_token_row->user_id;
+                        $nick_name = $is_valid_token_row->nick_name;
+                        $email = $is_valid_token_row->email;
                         $old_token = $is_valid_token_row->app_token;
                         $is_admin_var = $db->get_var("select AdminId from admins where AdminId = '$user_id'");
                         $is_admin = $is_admin_var ? '1' : '0';
-                        if(isset($user_infos['u']))
+                        if(isset($user_infos['g']))
                             {
-                                $new_token = md5($nick_name . time().strrev($email));
-                                $new_token_qu = $db->query("update users set app_token = '$new_token' where app_token = '$old_token'");
-                                return(json_encode(array("s" => '1',"t" => $new_token,"u" => $user_id,"p" => $is_admin)));
+                                $cell_number = $is_valid_token_row->cell_number;
+                                $full_name = $is_valid_token_row->full_name;
+                                $user_pic = $is_valid_token_row->user_pic;
+                                $user_points = $is_valid_token_row->user_points;
+                                $user_country = $is_valid_token_row->user_country;
+                                $infos_arr = array("c" => $cell_number,"co" => $user_country,"e" => $email,"f" => $full_name,"i" => $user_id,"n" => $nick_name,"p" => $user_pic,"pt" => $user_points);
                             }
                         else
                             {
-                                return(json_encode(array("s" => '1',"t" => $old_token,"u" => $user_id,"p" => $is_admin)));
+                                $infos_arr = "-1";
+                            }
+                        if(isset($user_infos['u']))
+                            {
+                                $new_token = md5($nick_name . time().strrev($email));
+                                $new_token_qu = $db->query("update users set app_token = '$new_token' where UserId = '$user_id'");
+                                return(json_encode(array("s" => '1',"t" => $new_token,"u" => $user_id,"p" => $is_admin,"i" => $infos_arr)));
+                            }
+                        else
+                            {
+                                return(json_encode(array("s" => '1',"t" => $old_token,"u" => $user_id,"p" => $is_admin,"i" => $infos_arr)));
                             }
                     }
                 else
@@ -357,7 +398,7 @@ function sign_up($user_infos = array("n" => "","p" => "","g" => "","c" => "","f"
     /*Select from database for a user that have look like nick_name or email
      *If their were any already registered user with these infos return a jsonified array representing status error 002 as status to tell user to choose another infos
      */
-    
+    global $nick_name;
     $nick_name = InputFilter($user_infos['n']);
     $email = InputFilter($user_infos['e']);
     
@@ -448,7 +489,26 @@ function sign_up($user_infos = array("n" => "","p" => "","g" => "","c" => "","f"
             //LoginAsUser ($nick_name);
         }
     if(file_exists("../../uploads/users/".$uuid."/"))
-        rename("../../uploads/users/".$uuid."/", "../../uploads/users/".$nick_name);
+        {
+            @rename("../../uploads/users/".$uuid."/", "../../uploads/users/".$nick_name);
+        }
+    $user_pictures = glob("../../uploads/users/$nick_name/avatar*");
+    if(is_array($user_pictures))
+        {
+            global $current_extension;
+            $current_extension = "";
+            array_walk($user_pictures, function ($user_picture)
+                                            {
+                                                global $db,$nick_name;
+                                                $extension_arr = explode('.',$user_picture);
+                                                if(is_array($extension_arr) && count($extension_arr) > 1)
+                                                    $current_extension = end($extension_arr);
+                                                else
+                                                    $current_extension = $extension_arr[0];
+                                                $db->query("update users set UserPic = 'uploads/users/".$nick_name."/avatar_128.".$current_extension."' where NickName = '$nick_name'");
+                                                return 0;
+                                            });
+        }
     return json_encode(array("s" => 1,"t" => $app_token));
 }
 
@@ -523,28 +583,79 @@ function sign_in($user_infos = array("t" => "","u" => "","p" => "","d" => ""))
             $user_id = $already_user_row->UserId;
             $old_token = $already_user_row->app_token;
             $new_token = md5($already_user_row->NickName . time().strrev($already_user_row->UserMail));
-            $new_token_qu = $db->query("update users set app_token = '$new_token',uuid = '$passed_device_id' where app_token = '$old_token'");
+            $new_token_qu = $db->query("update users set app_token = '$new_token',uuid = '$passed_device_id' where UserId = '$user_id'");
             $privilege_var = $db->get_var("select AdminId from admins where AdminId = '$user_id'");
             $privilege = $privilege_var ? '1' : '0';
+            
+            $infos_arr = get_user_infos(array("t" => $new_token));
+            /*$is_valid_token_row = $db->get_row("select CellNbr as cell_number,Contry as user_country,app_token,UserId as user_id,NickName as nick_name,UserPic as user_pic,Points as user_points,UserMail as email,concat(UserName,' ',FamName) as full_name from users where app_token = '$new_token'");
+            $nick_name = $is_valid_token_row->nick_name;
+            $email = $is_valid_token_row->email;
+            $cell_number = $is_valid_token_row->cell_number;
+            $full_name = $is_valid_token_row->full_name;
+            $user_pic = $is_valid_token_row->user_pic;
+            $user_points = $is_valid_token_row->user_points;
+            $user_country = $is_valid_token_row->user_country;
+            $infos_arr = array("c" => $cell_number,"co" => $user_country,"e" => $email,"f" => $full_name,"i" => $user_id,"n" => $nick_name,"p" => $user_pic,"pt" => $user_points);*/
+            
             mobile_login($already_user_row->NickName);
-            return json_encode(array("s" => '1',"t" => $new_token,"p" => $privilege));
+            
+            return json_encode(array("s" => '1',"t" => $new_token,"p" => $privilege,"i" => $infos_arr));
         }
     else
         return $invalid_user_error_json;
 }
 
+function retrieve_news_in_list_details($results_res,$language)
+    {
+        global $db;
+        if(empty($db))
+            $db = new db();
+        $news = $results_res;
+        $news_id = $news->IdNews;
+        $news_sql = "select * from languages as l,news as n,newslang as nl where l.IdLang = nl.IdLang and n.IdNews = nl.IdNews and l.LangName = '$language' and n.IdNews = '$news_id'";
+        $news_row = $db->get_row($news_sql);
+        $news_is_urgent = $news_row->urgent;
+        $news_date = $news->Date;
+        $news_agency = $news->agency;
+        $news_author_id = $news->IdUserName;
+        $news_author_name = $db->get_var("select concat(UserName,' ',FamName) from users where UserId = '$news_author_id'");
+        $news_pic = $news_row->NewsPic;
+        $news_title = $news_row->Tilte;
+
+        $latest_id = $news_id;
+        $last_news_date = $news_date;
+
+        $social_date = socialDateDif(strtotime(date("Y-m-d H:i:s")), strtotime($news_date), true);
+
+        $agency_pic_big = $db->get_var("select UserPic from users where NickName = '".$news_agency."'");
+        $agency_pic = str_replace(array('128'),array('32'),$agency_pic_big);
+
+        $author_pic_big = $db->get_var("select UserPic from users where NickName = '".$news_author_id."'");
+        $author_pic = str_replace(array('128'),array('32'),$author_pic_big);
+
+        $mobile_news_pic = str_replace('.','_320.',$news_pic);
+        if(file_exists("../../uploads/news/pics/".$mobile_news_pic))
+            {
+                $news_pic = $mobile_news_pic;
+            }
+        return(array("latest_id" => $latest_id,"last_news_date" => $last_news_date,"details" =>  array("type" => "news","id" => $news_id,"pic" => $news_pic ,"title" => $news_title,"date" => $news_date,"social_date" => $social_date,"urgent" => $news_is_urgent,"agency" => $agency_pic,"agency_name" => $news_agency,"author" => $author_pic,"author_id" => $news_author_id,"author_name" => $news_author_name)));
+    }
 /**
  * Get last n news order by order using language for each category or for specific category if index c found
- * @param String $o Order of news
  * @param String $l Language of retrieved news
  * @param String $t Token of the user
+ * @param String $o Order of news
  * @param String $li count of news each time to get (n news = li news)
  * @param String $c category_id the category we want to get the last n news(if omitted all categories will be fetched)
+ * @param String $ln get last news or by categories
+ * @param String $u urgent news only or all news
+ * @param String $a author_id the id of an author we want to fetch all news related to them
  * 
  * @return jsonified_array with index s = 1 and index r that contain all news appropriate to our selection if news found
  * or index s = status_error if no news found or user pass an invalid token
  */
-function get_news($categories_infos = array('l'=> '','t' => '','o' => '','li' => '','c' => '','ln' => '','u' => ''))
+function get_news($categories_infos = array('l'=> '','t' => '','o' => '','li' => '','c' => '','ln' => '','u' => '','a' => ''))
     {
         global $db;
         if(empty($db))
@@ -556,183 +667,237 @@ function get_news($categories_infos = array('l'=> '','t' => '','o' => '','li' =>
         $malformed_error_json = json_encode(array("s" => '004'));//in case of malformed parameters either not in same order or invalid indexed element used
     
         //create an array that will contains our indexes to prevent sending array with any other infos
-        $valid_indexes_arr = array("l","t","o","li","c","ln","u");
+        $valid_indexes_arr = array("l","t","o","li","c","ln","u","a");
         
         //Create an array that will contains our optional indexes to skip when any of element are empty
-        $optional_indexes_arr = array("l","t","o","li","c","ln","u");
+        $optional_indexes_arr = array("l","t","o","li","c","ln","u","a");
         
         //Create an array that will contains our default values that will be used when any infos is empty
-        $default_values_arr = array("l" => 'Arabic',"t" => "","o" => "desc","li" => 5,"c" => "","ln" => 0,"u" => 0);
+        $default_values_arr = array("l" => 'Arabic',"t" => "","o" => "desc","li" => 5,"c" => "","ln" => 1,"u" => 0,"a" => "");
     
         // Propose that all infos are valid
-        $infos_validity_arr = array("l" => 1,"t" => 1,"o" => 1,"li" => 1,"c" => 1,"ln" => 1,"u" => 1);
+        $infos_validity_arr = array("l" => 1,"t" => 1,"o" => 1,"li" => 1,"c" => 1,"ln" => 1,"u" => 1,"a" => 1);
     
         //if the user infos is empty or not a valid array or its count is not equal to our supposed array
         if(empty($categories_infos) || !is_array($categories_infos) || count($categories_infos) <= 0 || count($categories_infos) > count($valid_indexes_arr))
-            {$categories_infos = $default_values_arr;}
+            {
+                $categories_infos = $default_values_arr;
+            }
         //test each info validity
         $index = 0;
         foreach($categories_infos as $info_name => $info_value)
             {
                 if(!in_array($info_name,$valid_indexes_arr))
-                    {return($malformed_error_json);}
+                    {
+                        return($malformed_error_json);
+                    }
                 
                 // If it is not valid set the convenable index to 0
                 if(!in_array($info_name, $optional_indexes_arr) && (empty($info_value) || strlen(trim($info_value)) == 0))
-                    {$infos_validity_arr[$info_name] = 0;}
+                    {
+                        $infos_validity_arr[$info_name] = 0;
+                    }
                 else
                     {
                         if((empty($info_value) || strlen(trim($info_value)) == 0))
-                            {$categories_infos[$info_name] = $default_values_arr[$info_name];}
+                            {
+                                $categories_infos[$info_name] = $default_values_arr[$info_name];
+                            }
                     }
                 $index ++;
             }
         
-        $language = isset($categories_infos['l']) ? InputFilter($categories_infos['l']) : 'Arabic';
-        $order = isset($categories_infos['o']) ? InputFilter($categories_infos['o']) : 'desc';
-        //$limit = isset($categories_infos['li']) ? intval($categories_infos['li']) : 5;
-        $cat_id = isset($categories_infos['c']) ? InputFilter($categories_infos['c']) : "";
-        $token = isset($categories_infos['t']) ? InputFilter($categories_infos['t']) : "";
-        $last_news = isset($categories_infos['ln']) && $categories_infos['ln'] == '1' ? 1 : 0;
-        $just_urgent_last_news = isset($categories_infos['u']) && $categories_infos['u'] == '1' ? 1 : 0;
-        $limit = ($last_news == 1)?10 : (!empty($cat_id)?10 : 3);
+        $language = isset($categories_infos['l']) && ($db->get_var("select LangName from languages where LangName = '".InputFilter($categories_infos['l'])."'"))? InputFilter($categories_infos['l']) : 'Arabic';
+        $order = isset($categories_infos['o']) && in_array(InputFilter($categories_infos['o']),array('asc','desc'))? InputFilter($categories_infos['o']) : 'desc';
+        $cat_id = isset($categories_infos['c']) && !empty($categories_infos['c']) && ($db->get_var("select IdCat from catlang where IdCat = '".InputFilter($categories_infos['c']."'")))? InputFilter($categories_infos['c']) : "";// Get news for specific category or for all categories
+        $token = isset($categories_infos['t']) ? InputFilter($categories_infos['t']) : "";// Token of user to know if we want to get news suitable to user settings or all news
+        $last_news = isset($categories_infos['ln']) && $categories_infos['ln'] == '1' ? 1 : 0;// Get news by last news
+        $just_urgent_news = isset($categories_infos['u']) && $categories_infos['u'] == '1' ? 1 : 0;// Get just urgent news
+        // If not empty so we are getting news for a specific author
+        $author_news = isset($categories_infos['a']) && !empty($categories_infos['a']) && ($db->get_var("select UserId from users where UserId = '".InputFilter($categories_infos['a'])."'")) ? InputFilter($categories_infos['a']) : "";
+        $limit = ($last_news == 1)?10 : (!empty($cat_id)?10 : 3);// count of news we want to retrieve each time
         $user_choice = 0;
-        
-        if($last_news == 1)
+        $for_days = 4;
+        $urgent_sql = "";
+
+        if($last_news == 1)// Get last news
             {
-                if($just_urgent_last_news == 1)
+                if($just_urgent_news == 1)//Just get urgent news
                     {
-                        $all_categories_sql = "select * from news as n,newslang as nl,languages as l where l.IdLang = nl.IdLang and n.IdNews = nl.IdNews and n.Active = 1 and n.Deleted != 1 and n.urgent = 1 order by n.IdNews desc,n.`Date` desc limit 0,$limit";
-                        file_put_contents("text.txt", $just_urgent_last_news . " ddd " .$all_categories_sql ." \n \n",FILE_APPEND);
+                        $urgent_sql = " and n.urgent = 1";
+                    }
+                $categories_to_fetch_sql = "select * from news as n,newslang as nl,languages as l where l.IdLang = nl.IdLang and n.IdNews = nl.IdNews and n.Active = 1 and n.Deleted != 1 and  n.`Date` > DATE_SUB(NOW(), INTERVAL " . $for_days . " DAY) $urgent_sql order by n.IdNews desc,n.`Date` desc limit 0,$limit";
+            }
+        else if(!empty($author_news))// Get news for specific author
+            {
+                if($just_urgent_news == 1)//Just get urgent news
+                    {
+                        $urgent_sql = " and n.urgent = 1";
+                    }
+                $categories_to_fetch_sql = "select * from news as n,newslang as nl,languages as l where l.IdLang = nl.IdLang and n.IdNews = nl.IdNews and n.Active = 1 and n.Deleted != 1 and n.IdUserName = '$author_news'$urgent_sql order by n.IdNews desc,n.`Date` desc limit 0,$limit";
+            }
+        else if(!empty($cat_id))// Get news for specific category
+            {
+                if($token == "")
+                    {
+                        if($just_urgent_news == 1)
+                            {
+                                $urgent_sql = " and n.urgent = 1";
+                            }
                     }
                 else
                     {
-                        $all_categories_sql = "select * from news as n,newslang as nl,languages as l where l.IdLang = nl.IdLang and n.IdNews = nl.IdNews and n.Active = 1 and n.Deleted != 1 order by n.IdNews desc,n.`Date` desc limit 0,$limit";
-                        file_put_contents("text.txt", $just_urgent_last_news . " fff " .$all_categories_sql ." \n \n",FILE_APPEND);
-                    }
-            }
-        else if(empty($cat_id))
-            {
-                if(!empty($token))
-                    {
-                        if($token == 'token')
+                        $is_valid_token_var = $db->get_var("select UserId from users where app_token = '$token'");
+                        if($is_valid_token_var)
                             {
-                                $all_categories_sql = "select cl.IdCat,cl.CatName from languages as l,catlang as cl where l.IdLang = cl.IdLang and l.LangName = '$language' and cl.Deleted != 1 order by `sort`";
-                            }
-                        else
-                            {
-                                $valid_token_var = $db->get_var("select UserId from users where app_token = '$token'");
-                                if(!$valid_token_var)
-                                    {return $invalid_token_error_json;}
-                                $all_categories_sql = "select cl.IdCat,cl.CatName,ns.only_urgent from languages as l,catlang as cl,news_subscription as ns where l.IdLang = cl.IdLang and cl.Deleted != 1 and cl.IdCat = ns.cat_id and l.LangName = '$language' and ns.user_id ='$valid_token_var' order by `sort` $order";
-                                $count_of_choosed_categories = $db->get_var("select count(*) from languages as l,catlang as cl,news_subscription as ns where l.IdLang = cl.IdLang and cl.Deleted != 1 and cl.IdCat = ns.cat_id and l.LangName = '$language' and ns.user_id ='$valid_token_var' order by `sort` $order");
-                                if($count_of_choosed_categories > 0)
+                                $is_subscribed_cat_var = $db->get_row("select only_urgent from news_subscription where user_id = '$is_valid_token_var' and cat_id = '$cat_id'");
+                                if($is_subscribed_cat_var)
                                     {
-                                        $user_choice = 1;
+                                        if($is_subscribed_cat_var === 1)
+                                            {
+                                                $urgent_sql = " and n.urgent = 1";
+                                            }
                                     }
                                 else
                                     {
-                                        $all_categories_sql = "select cl.IdCat,cl.CatName from languages as l,catlang as cl where l.IdLang = cl.IdLang and l.LangName = '$language' and cl.Deleted != 1 order by `sort` $order";
+                                        if($just_urgent_news == 1)
+                                            {
+                                                $urgent_sql = " and n.urgent = 1";
+                                            }
+                                    }
+                            }
+                        else
+                            {
+                                if($just_urgent_news == 1)
+                                    {
+                                        $urgent_sql = " and n.urgent = 1";
                                     }
                             }
                     }
-                else
-                    {$all_categories_sql = "select cl.IdCat,cl.CatName from languages as l,catlang as cl where l.IdLang = cl.IdLang and l.LangName = '$language' and cl.Deleted != 1 order by cl.`sort` $order";}
+                $categories_to_fetch_sql = "select cl.IdCat,cl.CatName from languages as l,catlang as cl where l.IdLang = cl.IdLang and l.LangName = '$language' and cl.IdCat = '$cat_id' and cl.Deleted != 1 order by cl.`sort` $order";
             }
-        else
-            {$all_categories_sql = "select cl.IdCat,cl.CatName from languages as l,catlang as cl where l.IdLang = cl.IdLang and l.LangName = '$language' and cl.IdCat = '$cat_id' and cl.Deleted != 1 order by `sort` $order";}
+        else// Get all news sorted by category
+            {
+                if(!empty($token))//If their were any token validate token if is valid get categories due user settings
+                    {
+                        // Query to select all categories
+                        $categories_to_fetch_sql = "select cl.IdCat,cl.CatName from languages as l,catlang as cl where l.IdLang = cl.IdLang and l.LangName = '$language' and cl.Deleted != 1 order by cl.`sort` $order";
+                        // Validate token
+                        $valid_token_var = $db->get_var("select UserId from users where app_token = '$token'");
+                        // If is valid token so switch query to a query that will get categories due user settings
+                        if($valid_token_var)
+                            {
+                                // Query to select categories that user is subscribed to
+                                $user_categories_sql = "select cl.IdCat,cl.CatName,ns.only_urgent from languages as l,catlang as cl,news_subscription as ns where l.IdLang = cl.IdLang and cl.Deleted != 1 and cl.IdCat = ns.cat_id and l.LangName = '$language' and ns.user_id ='$valid_token_var' order by cl.`sort` $order";
+                                // Calculate the count of categories selected
+                                $count_of_user_categories_var = $db->get_var("select count(*) from languages as l,catlang as cl,news_subscription as ns where l.IdLang = cl.IdLang and cl.Deleted != 1 and cl.IdCat = ns.cat_id and l.LangName = '$language' and ns.user_id ='$valid_token_var' order by cl.`sort` $order");
+                                if($count_of_user_categories_var > 0)
+                                    {
+                                        $user_choice = 1;
+                                        $categories_to_fetch_sql = $user_categories_sql;
+                                    }
+                                else
+                                    {
+                                        if($just_urgent_news == 1)
+                                            {
+                                                $urgent_sql = " and n.urgent = 1";
+                                            }
+                                    }
+                            }
+                        else
+                            {
+                                if($just_urgent_news == 1)
+                                    {
+                                        $urgent_sql = " and n.urgent = 1";
+                                    }
+                            }
+                    }
+                else// If no token is found so get all categories
+                    {
+                        if($just_urgent_news == 1)
+                            {
+                                $urgent_sql = " and n.urgent = 1";
+                            }
+                        // Query to select all categories
+                        $categories_to_fetch_sql = "select cl.IdCat,cl.CatName from languages as l,catlang as cl where l.IdLang = cl.IdLang and l.LangName = '$language' and cl.Deleted != 1 order by cl.`sort` $order";
+                    }
+            }
         
-        $all_categories_rs = $db->get_results($all_categories_sql);
+        $results_res = $db->get_results($categories_to_fetch_sql);
         
-        if($all_categories_rs)
+        if($results_res && count($results_res) > 0)
             {
                 $result = array("result" => array());
                 $latest_id = "";
                 
-                if($last_news == 1)//Retrieve just last news
+                if($last_news == 1 || !empty($author_news))//Retrieve news details for last news or for author news or specific category
                     {
-                        if($just_urgent_last_news == 1)
-                            $only_urgent = " and n.urgent = 1";
+                        if($last_news == 1)
+                            $result["result"][] = array("type" => "category","id" => '903930' ,"title" => api_last_news);
                         else
-                            $only_urgent = "";
-                        $result["result"][] = array("type" => "category","id" => '903930' ,"title" => 'آخر الأخبار');
-                        foreach($all_categories_rs as $news)
                             {
-                                $news_id = $news->IdNews;
-                                $news_date = $news->Date;
-                                
-                                $latest_id = $news_id;
-                                $last_news_date = $news_date;
-                                
-                                $latest_news_sql = "select * from languages as l,news as n,newslang as nl where l.IdLang = nl.IdLang and n.IdNews = nl.IdNews and l.LangName = '$language' and n.IdNews = '$news_id'";
-                                $latest_news_row = $db->get_row($latest_news_sql);
-                                
-                                $social_date = socialDateDif(strtotime(date("Y-m-d H:i:s")), strtotime($news_date), true);
-                                
-                                $agency_pic_big = $db->get_var("select UserPic from users where NickName = '".$latest_news_row->agency."'");
-                                $agency_pic = str_replace(array('128'),array('32'),$agency_pic_big);
-                                
-                                $mobile_news_image = str_replace('.','_320.',$latest_news_row->NewsPic);
-                                if(file_exists("../../uploads/news/pics/".$mobile_news_image))
-                                    {
-                                        $news_image = $mobile_news_image;
-                                    }
-                                else
-                                    {
-                                        $news_image = $latest_news_row->NewsPic;
-                                    }
-                                $result["result"][] = array("type" => "news","id" => $news_id,"pic" => $news_image ,"title" => $latest_news_row->Tilte,"date" => $news_date,"social_date" => $social_date,"urgent" => $latest_news_row->urgent,"agency" => $agency_pic,"agency_name" => $latest_news_row->agency);
+                                $author_name_var = $db->get_var("select concat(UserName,' ',FamName) as full_name from users where UserId = '$author_news'");
+                                $result["result"][] = array("type" => "category","id" => '903930' ,"title" => api_author_news . $author_name_var);
                             }
-                        $have_more_news_sql = "select count(*) from news as n where n.`Date` <= '$last_news_date' and n.Active = 1 and n.Deleted != 1 and n.`IdNews` != '$latest_id'" . $only_urgent ." order by n.Date Desc,n.IdNews desc";
+                        foreach($results_res as $news)
+                            {
+                                $news_array = retrieve_news_in_list_details($news,$language);
+                                $latest_id = $news_array['latest_id'];
+                                $last_news_date = $news_array['last_news_date'];
+                                $result["result"][] = $news_array['details'];
+                            }
+                            
+                        if(!empty($author_news))// Query to calculate if their were any more news for the same author to fetch in next request from the server
+                            $have_more_news_sql = "select count(*) from news as n where n.`Date` <= '$last_news_date' and n.Active = 1 and n.Deleted != 1 and n.`IdNews` != '$latest_id' and n.IdUserName = '$author_news'" . $urgent_sql ." order by n.Date Desc,n.IdNews desc";
+                        else if(!empty($cat_id))// Query to calculate if their were any more news in same category to fetch in next request from the server
+                            $have_more_news_sql = "select count(*) from news as n,newscategoies as nc where n.IdNews = nc.IdNews and nc.IdCat = '$cat_id' and n.`Date` <= '$last_news_date' and n.Active = 1 and n.Deleted != 1 and n.`IdNews` != '$latest_id'" . $urgent_sql ." order by n.Date desc,n.IdNews desc";
+                        else// Query to calculate if their were any more last news to fetch in next request from the server
+                            $have_more_news_sql = "select count(*) from news as n where n.`Date` <= '$last_news_date' and n.Active = 1 and n.Deleted != 1 and n.`IdNews` != '$latest_id'" . $urgent_sql ." order by n.Date Desc,n.IdNews desc";
+                        
                         $have_more_news_var = $db->get_var($have_more_news_sql);
-
+                        
                         if($have_more_news_var > 0)
-                            {$result["result"][] = array("type" => "more","id" => $latest_id,"cat" => 'all',"title" => api_get_news_more,"urgent" => $just_urgent_last_news);}
+                            {
+                                if(!empty($author_news))
+                                    $result["result"][] = array("type" => "more","id" => $latest_id,"author" => $author_news,"title" => api_get_news_more,"urgent" => $just_urgent_news);
+                                else if(!empty($cat_id))
+                                    $result["result"][] = array("type" => "more","id" => $latest_id,"cat" => $cat_id,"title" => api_get_news_more,"urgent" => $just_urgent_news);
+                                else
+                                    $result["result"][] = array("type" => "more","id" => $latest_id,"cat" => 'all',"title" => api_get_news_more,"urgent" => $just_urgent_news);
+                            }
                         else
-                            {$result["result"][] = array("type" => "more","id" => -1);}
+                            {
+                                $result["result"][] = array("type" => "more","id" => -1);
+                            }
                     }
                 else
                     {
-                        foreach($all_categories_rs as $category)
+                        foreach($results_res as $category)
                             {
                                 $cat_id = $category->IdCat;
-                                $only_urgent = "";
                                 if($user_choice == 1)
                                     {
                                         if($category->only_urgent == 1)
-                                            {$only_urgent = "and n.urgent = 1";}
-                                    }
-                                else if($token == 'token')
-                                    {
-                                        //$only_urgent = "and n.urgent = 1";
+                                            {
+                                                $urgent_sql = " and n.urgent = 1";
+                                            }
                                     }
                                     
-                                $latest_news_sql = "select * from languages as l,news as n,newslang as nl,newscategoies as nc where l.IdLang = nl.IdLang and n.IdNews = nc.IdNews and n.IdNews = nl.IdNews and n.Active = 1 and n.Deleted != 1 and nc.IdCat = '$cat_id' and l.LangName = '$language'" . $only_urgent ." order by n.Date desc,n.IdNews desc limit 0,$limit";
+                                $news_sql = "select * from languages as l,news as n,newslang as nl,newscategoies as nc where l.IdLang = nl.IdLang and n.IdNews = nc.IdNews and n.IdNews = nl.IdNews and n.Active = 1 and n.Deleted != 1 and nc.IdCat = '$cat_id' and l.LangName = '$language'" . $urgent_sql ." order by n.Date desc,n.IdNews desc limit 0,$limit";
 
-                                $latest_news_rs = $db->get_results($latest_news_sql);
+                                $news_res = $db->get_results($news_sql);
                                 $latest_id = "";
-                                if($latest_news_rs)
+                                if($news_res && count($news_res) > 0)
                                     {
                                         $result["result"][] = array("type" => "category","id" => $category->IdCat ,"title" => $category->CatName);
-                                        foreach($latest_news_rs as $latest_news)
+                                        foreach($news_res as $news)
                                             {
-                                                $last_news_date = $latest_news->Date;
-                                                //$social_date = socialDateDif(strtotime(date("Y-m-d H:i:s")), strtotime($last_news_date), true);
-                                                $latest_id = $latest_news->IdNews;
-                                                $agency_pic_big = $db->get_var("select UserPic from users where NickName = '".$latest_news->agency."'");
-                                                $agency_pic = str_replace(array('128'),array('32'),$agency_pic_big);
-                                                $mobile_news_image = str_replace('.','_320.',$latest_news->NewsPic);
-                                                if(file_exists("../../uploads/news/pics/".$mobile_news_image))
-                                                    {
-                                                        $news_image = $mobile_news_image;
-                                                    }
-                                                else
-                                                    {
-                                                        $news_image = $latest_news->NewsPic;
-                                                    }
-                                                $result["result"][] = array("type" => "news","id" => $latest_id,"pic" => $news_image ,"title" => $latest_news->Tilte,"date" => $latest_news->Date,"social_date" => $latest_news->Date,"urgent" => $latest_news->urgent,"agency" => $agency_pic);
+                                                $news_array = retrieve_news_in_list_details($news,$language);
+                                                $latest_id = $news_array['latest_id'];
+                                                $last_news_date = $news_array['last_news_date'];
+                                                $result["result"][] = $news_array['details'];
                                             }
-                                        $have_more_news_sql = "select count(*) from news as n,newscategoies as nc where n.IdNews = nc.IdNews and nc.IdCat = '$cat_id' and n.`Date` <= '$last_news_date' and n.Active = 1 and n.Deleted != 1 and n.`IdNews` != '$latest_id'" . $only_urgent ." order by n.Date desc,n.IdNews desc";
+                                        $have_more_news_sql = "select count(*) from news as n,newscategoies as nc where n.IdNews = nc.IdNews and nc.IdCat = '$cat_id' and n.`Date` <= '$last_news_date' and n.Active = 1 and n.Deleted != 1 and n.`IdNews` != '$latest_id'" . $urgent_sql ." order by n.Date desc,n.IdNews desc";
                                         $have_more_news_var = $db->get_var($have_more_news_sql);
 
                                         if($have_more_news_var > 0)
@@ -740,7 +905,7 @@ function get_news($categories_infos = array('l'=> '','t' => '','o' => '','li' =>
                                                 if($user_choice == 1)
                                                     $result["result"][] = array("type" => "more","id" => $latest_id,"cat" => $cat_id,"title" => api_get_news_more,"urgent" => $category->only_urgent);
                                                 else
-                                                    $result["result"][] = array("type" => "more","id" => $latest_id,"cat" => $cat_id,"title" => api_get_news_more,"urgent" => 0);
+                                                    $result["result"][] = array("type" => "more","id" => $latest_id,"cat" => $cat_id,"title" => api_get_news_more,"urgent" => $just_urgent_news);
                                             }
                                         else
                                             {$result["result"][] = array("type" => "more","id" => -1);}
@@ -756,11 +921,13 @@ function get_news($categories_infos = array('l'=> '','t' => '','o' => '','li' =>
                         return json_encode(array("s" => 1,"r" => $result));
                     }
             }
-        else
-            {return $no_news_found_error_json;}
+    else
+        {
+            return $no_news_found_error_json;
+        }
     }
 
-function get_more_news($categories_infos = array('l'=> '','o' => '','li' => '','c' => '','ld' => '','lid' => '','t' => '','u' => '','ln' => ''))
+function get_more_news($categories_infos = array('l'=> '','o' => '','li' => '','c' => '','ld' => '','lid' => '','t' => '','u' => '','ln' => '','a' => ''))
     {
         global $db;
         if(empty($db)){$db = new db();}
@@ -771,135 +938,179 @@ function get_more_news($categories_infos = array('l'=> '','o' => '','li' => '','
         $no_news_found_error_json = json_encode(array("s" => '004'));
     
         //create an array that will contains our indexes to prevent sending array with any other infos
-        $valid_indexes_arr = array("l","o","li","c","ld","lid","t","u","ln");
+        $valid_indexes_arr = array("l","o","li","c","ld","lid","t","u","ln","a");
         
         //Create an array that will contains our optional indexes to skip when any of element are empty
-        $optional_indexes_arr = array("l","o","li","t","u","ln");
+        $optional_indexes_arr = array("l","o","li","t","u","ln","a");
         
         //Create an array that will contains our default values that will be used when any infos is empty
-        $default_values_arr = array("l" => 'Arabic',"o" => "desc","li" => 5,"c" => "","ld" => "","lid" => "","t" => "","u" => "","ln" => 0);
+        $default_values_arr = array("l" => 'Arabic',"o" => "desc","li" => 5,"c" => "","ld" => "","lid" => "","t" => "","u" => "","ln" => 0,"a" => "");
     
         // Propose that all infos are valid
-        $infos_validity_arr = array("l" => 1,"o" => 1,"li" => 1,"c" => 1,"ld" => 1,"lid" => 1,"t" => 1,"u" => 1,"ln" => 1);
+        $infos_validity_arr = array("l" => 1,"o" => 1,"li" => 1,"c" => 1,"ld" => 1,"lid" => 1,"t" => 1,"u" => 1,"ln" => 1,"a" => 1);
     
         //if the user infos is empty or not a valid array or its count is not equal to our supposed array
         if(empty($categories_infos) || !is_array($categories_infos) || count($categories_infos) <= 0)
-            {$categories_infos = $default_values_arr;}
+            {
+                $categories_infos = $default_values_arr;
+            }
             
         //test each info validity
         $index = 0;
         foreach($categories_infos as $info_name => $info_value)
             {
                 if(!in_array($info_name,$valid_indexes_arr))
-                    {return($malformed_error_json);}
+                    {
+                        return($malformed_error_json);
+                    }
 
                 // If it is not valid set the convenable index to 0
                 if(!in_array($info_name, $optional_indexes_arr) && (empty($info_value) || strlen(trim($info_value)) == 0))
-                    {$infos_validity_arr[$info_name] = 0;}
+                    {
+                        $infos_validity_arr[$info_name] = 0;
+                    }
                 else
                     {
                         if((empty($info_value) || strlen(trim($info_value)) == 0))
-                            {$categories_infos[$info_name] = $default_values_arr[$info_name];}
+                            {
+                                $categories_infos[$info_name] = $default_values_arr[$info_name];
+                            }
                     }
                 $index ++;
             }
-    
-        foreach($infos_validity_arr as $info => $validity)
-            {
-                if(empty($validity) || $validity == 0)
-                    {return(json_encode(array("s" => '001',"v" => $infos_validity_arr)));}
-            }
         
-        $language = InputFilter($categories_infos['l']);
-        $order = InputFilter($categories_infos['o']);
-        $limit = InputFilter($categories_infos['li']);
-        $cat_id = InputFilter($categories_infos['c']);
+        $language = isset($categories_infos['l']) && ($db->get_var("select LangName from languages where LangName = '".InputFilter($categories_infos['l'])."'"))? InputFilter($categories_infos['l']) : 'Arabic';
+        $order = isset($categories_infos['o']) && in_array(InputFilter($categories_infos['o']),array('asc','desc'))? InputFilter($categories_infos['o']) : 'desc';
+        $cat_id = isset($categories_infos['c']) && !empty($categories_infos['c']) && ($db->get_var("select IdCat from catlang where IdCat = '".InputFilter($categories_infos['c']."'")))? InputFilter($categories_infos['c']) : "";// Get news for specific category or for all categories
+        $token = isset($categories_infos['t']) ? InputFilter($categories_infos['t']) : "";// Token of user to know if we want to get news suitable to user settings or all news
+        $last_news = isset($categories_infos['ln']) && $categories_infos['ln'] == '1' ? 1 : 0;// Get news by last news
+        $just_urgent_news = isset($categories_infos['u']) && $categories_infos['u'] == '1' ? 1 : 0;// Get just urgent news
+        // If not empty so we are getting news for a specific author
+        $author_news = isset($categories_infos['a']) && !empty($categories_infos['a']) && ($db->get_var("select UserId from users where UserId = '".InputFilter($categories_infos['a'])."'")) ? InputFilter($categories_infos['a']) : "";
+        $author_name = "";
+        if(!empty($author_news))
+        {
+            $author_name = $db->get_var("select concat(UserName,' ',FamName) as full_name from users where UserId = '$author_news'");
+        }
+        $limit = ($last_news == 1)?10 : (!empty($cat_id)?10 : 3);// count of news we want to retrieve each time
+        $user_choice = 0;
+        $for_days = 4;
+        $urgent_sql = "";
         $last_date = InputFilter($categories_infos['ld']);
         $last_id = InputFilter($categories_infos['lid']);
-        $passed_token = InputFilter($categories_infos['t']);
-        $only_urgent = InputFilter($categories_infos['u']);
-        $last_news = InputFilter($categories_infos['ln']) && $categories_infos['ln'] === '1'? 1 : 0;
-        $limit = ($last_news == 1)?10 : (!empty($cat_id)?10 : 5);
-        $is_valid_token_var = $db->get_var("select UserId from users where app_token = '$passed_token'");
         
         $last_news_date = "";
-        
-        if($last_news !== 1)
-            $valid_category_row = $db->get_row("select * from languages as l,catlang as cl where l.IdLang = cl.IdLang and l.LangName = '$language' and cl.IdCat = '$cat_id' limit 0,1");
-        else
-            $valid_category_row = true;
-        
-        if($valid_category_row || $cat_id == 'all')
+        $latest_id = "";
+        $is_valid_token_var = $db->get_var("select UserId from users where app_token = '$token'");
+        if($last_news == 1 || !empty($author_news))
             {
-                $result = array("result" => array());
-                if($last_news === 1)
+                if($just_urgent_news == 1)
+                    $urgent_sql = " and n.urgent = 1";
+                $valid_category_row = true;
+            }
+        else if(!empty($cat_id))
+            {
+                if($is_valid_token_var)
                     {
-                        if($only_urgent)
+                        $is_subscribed_var = $db->get_var("select only_urgent from news_subscription where user_id = '$is_valid_token_var' and cat_id = '$cat_id'");
+                        if($is_subscribed_var)
                             {
-                                $latest_news_rs = $db->get_results("select * from languages as l,news as n,newslang as nl where l.IdLang = nl.IdLang and n.IdNews = nl.IdNews and n.Active = 1 and n.Deleted != 1 and l.LangName = '$language' and n.Date <= '$last_date' and n.IdNews != '$last_id' and n.IdNews < $last_id and n.urgent = 1 order by n.Date desc,n.IdNews desc limit 0,$limit");
-                                file_put_contents("text.txt","select * from languages as l,news as n,newslang as nl where l.IdLang = nl.IdLang and n.IdNews = nl.IdNews and n.Active = 1 and n.Deleted != 1 and l.LangName = '$language' and n.Date <= '$last_date' and n.IdNews != '$last_id' and n.urgent = 1 order by n.Date desc,n.IdNews desc limit 0,$limit \n",FILE_APPEND);
+                                if($is_subscribed_var == 1)
+                                    {
+                                        $urgent_sql = " and n.urgent = 1";
+                                    }
                             }
                         else
                             {
-                                $latest_news_rs = $db->get_results("select * from languages as l,news as n,newslang as nl where l.IdLang = nl.IdLang and n.IdNews = nl.IdNews and n.Active = 1 and n.Deleted != 1 and l.LangName = '$language' and n.Date <= '$last_date' and n.IdNews != '$last_id' and n.IdNews < $last_id order by n.Date desc,n.IdNews desc limit 0,$limit");
-                                file_put_contents("text.txt","select * from languages as l,news as n,newslang as nl where l.IdLang = nl.IdLang and n.IdNews = nl.IdNews and n.Active = 1 and n.Deleted != 1 and l.LangName = '$language' and n.Date <= '$last_date' and n.IdNews != '$last_id' order by n.Date desc,n.IdNews desc limit 0,$limit",FILE_APPEND);
+                                if($just_urgent_news == 1)
+                                    {
+                                        $urgent_sql = " and n.urgent = 1";
+                                    }
                             }
+                    }
+                $valid_category_row = $db->get_row("select * from languages as l,catlang as cl where l.IdLang = cl.IdLang and l.LangName = '$language' and cl.IdCat = '$cat_id' limit 0,1");
+            }
+        
+        if($valid_category_row)
+            {
+                $result = array("result" => array());
+                if($last_news == 1)
+                    {
+                        $news_res = $db->get_results("select * from languages as l,news as n,newslang as nl where l.IdLang = nl.IdLang and n.IdNews = nl.IdNews and n.Active = 1 and n.Deleted != 1 and l.LangName = '$language' and n.Date <= '$last_date' and n.IdNews != '$last_id' and n.IdNews < $last_id$urgent_sql order by n.Date desc,n.IdNews desc limit 0,$limit");
+                    }
+                else if(!empty($author_news))
+                    {
+                        $news_res = $db->get_results("select * from languages as l,news as n,newslang as nl where l.IdLang = nl.IdLang and n.IdNews = nl.IdNews and n.Active = 1 and n.Deleted != 1 and l.LangName = '$language' and n.Date <= '$last_date' and n.IdNews != '$last_id' and n.IdNews < $last_id and n.IdUserName = '$author_news'$urgent_sql order by n.Date desc,n.IdNews desc limit 0,$limit");
                     }
                 else
                     {
                         $category_row = $valid_category_row;
                         $cat_id = $category_row->IdCat;
-                        if($is_valid_token_var && $only_urgent)
-                            $latest_news_rs = $db->get_results("select * from languages as l,news as n,newslang as nl,newscategoies as nc where l.IdLang = nl.IdLang and n.IdNews = nc.IdNews and n.IdNews = nl.IdNews and n.Active = 1 and n.Deleted != 1 and nc.IdCat = '$cat_id' and l.LangName = '$language' and n.Date <= '$last_date' and n.IdNews != '$last_id' and n.urgent = 1 order by n.Date desc,n.IdNews desc limit 0,$limit");
-                        else
-                            $latest_news_rs = $db->get_results("select * from languages as l,news as n,newslang as nl,newscategoies as nc where l.IdLang = nl.IdLang and n.IdNews = nc.IdNews and n.IdNews = nl.IdNews and n.Active = 1 and n.Deleted != 1 and nc.IdCat = '$cat_id' and l.LangName = '$language' and n.Date <= '$last_date' and n.IdNews != '$last_id' order by n.Date desc,n.IdNews desc limit 0,$limit");
+                        $news_res = $db->get_results("select * from languages as l,news as n,newslang as nl,newscategoies as nc where l.IdLang = nl.IdLang and n.IdNews = nc.IdNews and n.IdNews = nl.IdNews and n.Active = 1 and n.Deleted != 1 and nc.IdCat = '$cat_id' and l.LangName = '$language' and n.Date <= '$last_date' and n.IdNews != '$last_id'$urgent_sql order by n.Date desc,n.IdNews desc limit 0,$limit");
                     }
-                $latest_id = "";
-                if(count($latest_news_rs) > 0)
+
+                if(count($news_res) > 0)
                     {
-                        if($last_news !== 1)
-                            $result["result"][] = array("type" => "category","id" => $category_row->IdCat ,"title" => $category_row->CatName);
-                        
-                        foreach($latest_news_rs as $latest_news_row)
+                        if(!empty($author_news))
                             {
-                                $latest_id = $latest_news_row->IdNews;
-                                $last_news_date = $latest_news_row->Date;
-                                if($last_news === 1)
-                                    $social_date = socialDateDif(strtotime(date("Y-m-d H:i:s")), strtotime($last_news_date), true);
-                                else
-                                    $social_date = $last_news_date;
-                                $agency_pic_var = $db->get_var("select UserPic from users where NickName = '".$latest_news_row->agency."'");
-                                $agency_pic = str_replace(array('128'),array('32'),$agency_pic_var);
-                                $mobile_news_image = str_replace('.','_320.',$latest_news_row->NewsPic);
-                                if(file_exists("../../uploads/news/pics/".$mobile_news_image))
-                                    {
-                                        $news_image = $mobile_news_image;
-                                    }
-                                else
-                                    {
-                                        $news_image = $latest_news_row->NewsPic;
-                                    }
-                                $result["result"][] = array("type" => "news","id" => $latest_id,"pic" => $news_image ,"title" => $latest_news_row->Tilte,"date" => $last_news_date,"social_date" => $social_date,"urgent" => $latest_news_row->urgent,"agency" => $agency_pic);
+                                $result["result"][] = array("type" => "category","id" => $author_news ,"title" => $author_name);
+                            }
+                        else if(!empty($cat_id))
+                            {
+                                $result["result"][] = array("type" => "category","id" => $cat_id ,"title" => $category_row->CatName);
+                            }
+                        else
+                            {
+                                $result["result"][] = array("type" => "category","id" => $category_row->IdCat ,"title" => $category_row->CatName);
                             }
                             
-                        if($last_news === 1)
+                        
+                        foreach($news_res as $news)
                             {
-                                if($only_urgent)
-                                    $have_more_news_rs = $db->get_var("select count(*) from news as n where n.`Date` <= '$last_news_date' and n.`IdNews` != '$latest_id' and n.Active = 1 and n.Deleted != 1 and n.urgent = 1 order by n.Date desc,n.IdNews desc");
-                                else
-                                    $have_more_news_rs = $db->get_var("select count(*) from news as n where n.`Date` <= '$last_news_date' and n.`IdNews` != '$latest_id' and n.Active = 1 and n.Deleted != 1 order by n.Date desc,n.IdNews desc");
+                                $news_array = retrieve_news_in_list_details($news_res,$language);
+                                $latest_id = $news_array['latest_id'];
+                                $last_news_date = $news_array['last_news_date'];
+                                $result["result"][] = $news_array['details'];
                             }
-                        else if($is_valid_token_var && $only_urgent === '1')
-                            $have_more_news_rs = $db->get_var("select count(*) from news as n,newscategoies as nc where n.IdNews = nc.IdNews and nc.IdCat = '$cat_id' and n.`Date` <= '$last_news_date' and n.`IdNews` != '$latest_id' and n.Active = 1 and n.Deleted != 1 and n.urgent = 1 order by n.Date desc,n.IdNews desc");
+                            
+                        if($last_news == 1)
+                            $have_more_news_rs = $db->get_var("select count(*) from news as n where n.`Date` <= '$last_news_date' and n.`IdNews` != '$latest_id' and n.Active = 1 and n.Deleted != 1$urgent_sql order by n.Date desc,n.IdNews desc");
+                        else if(!empty($author_news))
+                            $have_more_news_rs = $db->get_var("select count(*) from news as n where n.`Date` <= '$last_news_date' and n.`IdNews` != '$latest_id' and n.Active = 1 and n.Deleted != 1 and n.IdUserName = '$author_news'$urgent_sql order by n.Date desc,n.IdNews desc");
+                        else if(!empty($cat_id))
+                            {
+                                if($is_valid_token_var)
+                                    {
+                                        $is_subscribed_var = $db->get_var("select only_urgent from news_subscription where user_id = '$is_valid_token_var' and cat_id = '$cat_id'");
+                                        if($is_subscribed_var == 1)
+                                            {
+                                                $urgent_sql = " and n.urgent = 1";
+                                            }
+                                        else
+                                            {
+                                                if($just_urgent_news == 1)
+                                                    $urgent_sql = " and n.urgent = 1";
+                                            }
+                                    }
+                                else
+                                    {
+                                        if($just_urgent_news == 1)
+                                            $urgent_sql = " and n.urgent = 1";
+                                    }
+                                $have_more_news_rs = $db->get_var("select count(*) from news as n,newscategoies as nc where n.IdNews = nc.IdNews and nc.IdCat = '$cat_id' and n.`Date` <= '$last_news_date' and n.`IdNews` != '$latest_id' and n.Active = 1 and n.Deleted != 1$urgent_sql order by n.Date desc,n.IdNews desc");
+                            }
                         else
-                            $have_more_news_rs = $db->get_var("select count(*) from news as n,newscategoies as nc where n.IdNews = nc.IdNews and nc.IdCat = '$cat_id' and n.`Date` <= '$last_news_date' and n.`IdNews` != '$latest_id' and n.Active = 1 and n.Deleted != 1 order by n.Date desc,n.IdNews desc");
+                            $have_more_news_rs = $db->get_var("select count(*) from news as n,newscategoies as nc where n.IdNews = nc.IdNews and nc.IdCat = '$cat_id' and n.`Date` <= '$last_news_date' and n.`IdNews` != '$latest_id' and n.Active = 1 and n.Deleted != 1$urgent_sql order by n.Date desc,n.IdNews desc");
 
                         if($have_more_news_rs > 0)
                             {
-                                if($last_news === 1)
-                                    $result["result"][] = array("type" => "more","id" => $latest_id,"cat" => 'all',"title" => "المزيد");
+                                if(!empty($author_news))
+                                    $result["result"][] = array("type" => "more","id" => $latest_id,"author" => $author_news,"title" => api_get_news_more,"urgent" => $just_urgent_news);
+                                else if(!empty($cat_id))
+                                    $result["result"][] = array("type" => "more","id" => $latest_id,"cat" => $cat_id,"title" => api_get_news_more,"urgent" => $just_urgent_news);
                                 else
-                                    $result["result"][] = array("type" => "more","id" => $latest_id,"cat" => $cat_id,"title" => "المزيد");
+                                    $result["result"][] = array("type" => "more","id" => $latest_id,"cat" => 'all',"title" => api_get_news_more,"urgent" => $just_urgent_news);
+                                
                             }
                         else
                             $result["result"][] = array("type" => "more","id" => -1);
@@ -1028,8 +1239,8 @@ function set_settings($settings_infos = array("t","l","n" => array(),"s" => arra
     $valid_user_row = $db->get_row("select * from users where app_token = '$token'");
     if($valid_user_row)
         {
-            $update_user_preferred_language = $db->query("update users set PrefLang = '$language' where app_token = '$token'");
             $user_id = $valid_user_row->UserId;
+            $update_user_preferred_language = $db->query("update users set PrefLang = '$language' where UserId = '$user_id'");
             $notifications_settings_arr = $settings_infos['n'];
             $subscriptions_settings_arr = $settings_infos['s'];
     
@@ -1186,7 +1397,7 @@ function get_about($page_infos = array("l" => "Arabic"))
         }
 }
 
-function send_news($news_infos = array("t" => "","c" => "","a" => "","ca" => "","l" => "","i" => "","u" => "","ti" => ""))
+function send_news($news_infos = array("t" => "","c" => "","a" => "","ca" => "","l" => "","i" => "","v" => "","u" => "","ti" => ""))
 {
     global $db;
     
@@ -1200,8 +1411,8 @@ function send_news($news_infos = array("t" => "","c" => "","a" => "","ca" => "",
     $invalid_language_error_json = json_encode(array("s" => '005'));
     $empty_content_error_json = json_encode(array("s" => '006'));
     
-    $valid_indexes_arr = array("t","l","c","a","ca","i","u","ti");
-    $guest_valid_indexes_arr = array("l","c","ca","i","ti");
+    $valid_indexes_arr = array("t","l","c","a","ca","i","v" => "","u","ti");
+    $guest_valid_indexes_arr = array("l","c","ca","i","v" => "" ,"ti");
     
     
     if(!isset($news_infos) || !is_array($news_infos) || count($news_infos) > count($valid_indexes_arr) || count($news_infos) <= 0)
@@ -1518,6 +1729,104 @@ function get_unapprooved_news($user_infos = array("t" => "","l" => "","li" => ""
         {return $invalid_token_error_json;}
 }
 
+/* This function will invoke send email function to send a contact us email */
+function contact_us($email_infos = array("c" => "","d"=>"","e"=>"","f"=>"","l" => "","m"=>"","r" => "","t"=>""))
+    {
+        global $db,$AdminMail;
+        
+        $AdminMail = "info@cyberaman.com";
+        if(empty($db))
+            $db = new db();
+        
+        $invalid_infos_error_json = json_encode(array("s" => '001'));
+        $invalid_token_error_json = json_encode(array("s" => '002'));
+        $invalid_sender_error_json = json_encode(array("s" => '003'));
+        $empty_message_error_json = json_encode(array("s" => '004'));
+        if((!isset($email_infos['t']) && (!isset($email_infos['f']) || !isset($email_infos['e']))) || !isset($email_infos['m']) || !isset($email_infos['c']))
+            return $invalid_infos_error_json;
+        
+        if(isset($_SESSION['n1']) && isset($_SESSION['n2']))
+            {
+                if($email_infos['c'] != $_SESSION['n1'] + $_SESSION['n2'])
+                    {
+                        file_put_contents("cal.txt",$email_infos['c'] . "must = " . $_SESSION['n1']. ' + ' .$_SESSION['n1']. "=" . $_SESSION['n1'] + $_SESSION['n2'] ."\n",FILE_APPEND);
+                        unset($_SESSION['n1']);
+                        unset($_SESSION['n2']);
+                        $number1 = rand(0,10);
+                        $_SESSION['n1'] = $number1;
+                        $number2 = rand(0,10);
+                        $_SESSION['n2'] = $number2;
+                        return  json_encode(array("s" => '006',"n1" => $number1,"n2" => $number2));
+                    }
+            }
+        $passed_token = InputFilter($email_infos['t']);
+        if(!empty($passed_token))
+            {
+                $is_valid_token_row= $db->get_row("select Concat(UserName,' ',FamNAme) as full_name,UserMail as email,CellNbr,Contry from users where app_token = '$passed_token'");
+                if(!$is_valid_token_row)
+                    {
+                        return $invalid_token_error_json;
+                    }
+                $email = $is_valid_token_row->email;
+                $full_name = $is_valid_token_row->full_name;
+                $tel_number = $is_valid_token_row->CellNbr;
+                $country = $is_valid_token_row->Contry;
+            }
+        else
+            {
+                if(empty($email_infos['e']) || !check_email_address(InputFilter($email_infos['e'])))
+                    return $invalid_sender_error_json;
+                $email = InputFilter($email_infos['e']);
+                $full_name = !empty($email_infos['f'])?InputFilter($email_infos['f']) : "زائر";
+                $tel_number = "";
+                $country = "";
+            }
+        $reason = (isset($email_infos['r']) && !empty($email_infos['r']) && in_array(InputFilter($email_infos['r']), array('question','complaint','suggestion')))?InputFilter($email_infos['r']) : "complaint";
+        $passed_language = (isset($email_infos['l']) && !empty($email_infos['l'])) && $db->get_var("select LangName from languages where LangName = '" . InputFilter($email_infos['l']) ."'")?InputFilter($email_infos['l']) : "";
+        $passed_department = (isset($email_infos['d']) && !empty($email_infos['d']))?InputFilter($email_infos['d']) : "";
+        $is_valid_department_row = $db->get_row("SELECT c.`DepEmail`,cl.`DepName` FROM `contactus` as c , `contactuslang` as cl,`languages` as l where l.IdLang = cl.IdLang and `c`.`IdDep` = `cl`.`IdDep` and `c`.`IdDep`='$passed_department' and l.LangName = '$passed_language'");
+        if($is_valid_department_row)
+            {
+                $department_name = $is_valid_department_row->DepName;
+                $department_email = $is_valid_department_row->DepEmail;
+            }
+        else
+            {
+                $department_name = $passed_department;
+                $department_email = $AdminMail;
+            }
+    
+        $title = isset($email_infos['ti']) && !empty($email_infos['ti'])?InputFilter($email_infos['ti']) : "رسالة من تطبيق سايبر أمان";
+        $message = InputFilter($email_infos['m']);
+        $from = $email;
+        $from_name = $full_name;
+        $add_address[0] = $email;
+        $add_address[1] = $department_name;
+        $subject = "";
+        $street = "";
+        $city = "";
+        $body = "TelNumber : ".$tel_number."<br/> Street :".$street."<br/> City :".$city."<br/> Contry :".$country."<br/> TypeOfFeedback :".$reason."<br/> Message :".$message;
+        $mail_phpmailer = new PHPMailer();
+        ob_start();
+        $mailed = api_send_email($mail_phpmailer, $email,$full_name, $department_email, $title, $message,"");
+        $output = ob_get_clean();
+        file_put_contents("output.txt",$output ."\n" ,FILE_APPEND);
+        unset($_SESSION['n1']);
+        unset($_SESSION['n2']);
+        $number1 = rand(0,10);
+        $_SESSION['n1'] = $number1;
+        $number2 = rand(0,10);
+        $_SESSION['n2'] = $number2;
+        if($mailed)
+            {
+                return json_encode(array("s" => '1',"n1" => $number1,"n2" => $number2,"e" => $AdminMail));
+            }
+        else
+            {
+                return json_encode(array("s" => '005',"n1" => $number1,"n2" => $number2,"e" => $AdminMail));
+            }
+    }
+
 function send_email($email_infos=array("t" => "","to" => "","m" => "","ti" => ""))
 {
     global $db;
@@ -1640,7 +1949,7 @@ function mobile_login($UserNickName)
                     }
                 $db->query(" update `users` set `PrefLang`='" . $Lang . "' where `UserId`='" . $UserId . "' ; ");
                 setcookie("LastSession", session_id(), time() + $CookieLife,"/".$WebiteFolder."/");
-                $query = "UPDATE `users` SET `LastSession` = '" . session_id() . "' WHERE `app_token` = '" . $app_token . "' ;";
+                $query = "UPDATE `users` SET `LastSession` = '" . session_id() . "' WHERE `UserId` = '" . $UserId . "' ;";
                 $db->query($query);
             }
     }
@@ -1789,5 +2098,179 @@ function get_country()
     $ip_infos_json = file_get_contents("http://freegeoip.net/json/".$ip_address);
     $ip_infos_arr = json_decode($ip_infos_json);
     return $ip_infos_arr->country_code;
+}
+
+function get_all_departments($infos = array("l" => ""))
+    {
+        global $db;
+        if(empty($db))
+            $db = new db();
+        $language = !isset($user_infos['l']) || !$db->get_var("select LangName from languages where LangName = '".InputFilter($infos['l'])."'")?"Arabic" : InputFilter($infos['l']);
+        
+        $number1 = rand(0,10);
+        $_SESSION['n1'] = $number1;
+        $number2 = rand(0,10);
+        $_SESSION['n2'] = $number2;
+        $all_departments_res = $db->get_results("select c.IdDep,cl.DepName from contactus as c,contactuslang as cl,languages as l where l.IdLang = cl.IdLang and c.IdDep = cl.IdDep and l.LangName = '$language'");
+        if(count($all_departments_res) > 0)
+            {
+                $all_departments = array("s" => '1',"r" => array(),"n1" => $number1,"n2" => $number2);
+                $index = 0;
+                foreach($all_departments_res as $department_row)
+                    {
+                        $all_departments['r'][$index] = array("i" => $department_row->IdDep,"n" => $department_row->DepName);
+                        $index ++;
+                    }
+            }
+        else
+            {
+                $all_departments = array("s" => '0',"n1" => $number1,"n2" => $number2);
+            }
+        return json_encode($all_departments);
+    }
+    
+function get_user_infos($user_infos = array("t" => "","i" => "","j" => ""))
+{
+    global $db;
+    if(empty($db))
+        $db = new db();
+    
+    $token = isset($user_infos['t'])?InputFilter($user_infos['t']) : "";
+    $id = isset($user_infos['i'])?InputFilter($user_infos['i']) : "";
+    
+    if(!empty($token))
+        $is_valid_user_row = $db->get_row("select CellNbr as cell_number,Contry as user_country,app_token,UserId as user_id,NickName as nick_name,UserPic as user_pic,Points as user_points,UserMail as email,concat(UserName,' ',FamName) as full_name from users where app_token = '$token'");
+    else if(!empty($id))
+        $is_valid_user_row = $db->get_row("select CellNbr as cell_number,Contry as user_country,app_token,UserId as user_id,NickName as nick_name,UserPic as user_pic,Points as user_points,UserMail as email,concat(UserName,' ',FamName) as full_name from users where UserId = '$id'");
+    else
+        {
+            $is_valid_user_row = false;
+        }
+    if($is_valid_user_row)
+        {
+            $user_id = $is_valid_user_row->user_id;
+            $nick_name = $is_valid_user_row->nick_name;
+            $email = $is_valid_user_row->email;
+            $cell_number = $is_valid_user_row->cell_number;
+            $full_name = $is_valid_user_row->full_name;
+            $user_pic = $is_valid_user_row->user_pic;
+            $user_points = $is_valid_user_row->user_points;
+            $user_country = $is_valid_user_row->user_country;
+            $infos_arr = array("c" => $cell_number,"co" => $user_country,"e" => $email,"f" => $full_name,"i" => $user_id,"n" => $nick_name,"p" => $user_pic,"pt" => $user_points);
+        }
+    else
+        {
+            $infos_arr = "-1";
+        }
+    if(isset($user_infos['j']))
+        return json_encode(array("s" => '1',"i" => $infos_arr));
+    else
+        return $infos_arr;
+}
+
+function set_user_infos($user_infos = array("t" => "","n" => "","e" => "","p" => "","c" => ""))
+{
+    global $db;
+    if(empty($db))
+        $db = new db();
+    
+    $passed_token = isset($user_infos['t'])?InputFilter($user_infos['t']):"";
+    if(!empty($passed_token))
+    {
+        $is_valid_token_row = $db->get_row("select Contry,UserId,NickName,UserMail,Password from users where app_token = '$passed_token'");
+        if($is_valid_token_row)
+            {
+                $new_nick_name_bool = isset($user_infos['n']) && !empty($user_infos['n']) && $user_infos['n'] != $is_valid_token_row->NickName? '1' : 0;
+                $new_email_bool = isset($user_infos['e']) && !empty($user_infos['e']) && $user_infos['e'] != $is_valid_token_row->UserMail? '1' : 0;
+                $new_password_bool = isset($user_infos['p']) && !empty($user_infos['p']) && $user_infos['p'] != $is_valid_token_row->Password? '1' : 0;
+                $new_country_bool = isset($user_infos['c']) && !empty($user_infos['c']) && $user_infos['c'] != $is_valid_token_row->Contry? '1' : 0;
+                if(!$new_nick_name_bool && !$new_email_bool && !$new_password_bool && !$new_country_bool)
+                    {
+                        return json_encode(array("s"=>'003'));
+                    }
+                else
+                    {
+                        $is_found_nickname_var = $db->get_var("select NickName from users where NickName = '".$user_infos['n']."'");
+                        $new_nick_name_sql = $new_nick_name_bool && !$is_found_nickname_var ? "NickName = '".$user_infos['n']."'," : "";
+                        if(empty($new_nick_name_sql))
+                            {
+                                if($new_nick_name_bool === 0)
+                                    $new_nick_name_bool = 2;
+                                else
+                                    $new_nick_name_bool = 3;
+                            }
+                        
+                        $is_found_email_var = !$db->get_var("select UserMail from users where UserMail = '".$user_infos['e']."'");
+                        $new_email_sql = $new_email_bool && !$is_found_email_var && check_email_address($user_infos['e'])?"UserMail = '".$user_infos['e']."'," : "";
+                        if(empty($new_email_sql))
+                            {
+                                if($new_email_bool === 0)
+                                    $new_email_bool = 2;
+                                else
+                                    $new_email_bool = 3;
+                            }
+                        
+                        $new_password_sql = $new_password_bool ? "Password = '".md5($user_infos['p'])."'," : "";
+                        if(empty($new_password_sql))
+                            {
+                                if($new_password_bool === 0)
+                                    $new_password_bool = 2;
+                                else
+                                    $new_password_bool = 3;
+                            }
+                        
+                        $new_country_sql = $new_country_bool ? "Contry = '".$user_infos['c']."'," : "";
+                        if(empty($new_country_sql))
+                            {
+                                if($new_country_bool === 0)
+                                    $new_country_bool = 2;
+                                else
+                                    $new_country_bool = 3;
+                            }
+                        if(!empty($new_nick_name_sql) || !empty($new_email_sql) || !empty($new_password_sql) || !empty($new_country_sql))
+                            {
+                                $news_sql = "update users set ".$new_nick_name_sql.$new_email_sql.$new_password_sql.$new_country_sql;
+                                //echo $news_sql;
+                                $news_sql = substr($news_sql,0,strlen($news_sql) - 1)." where app_token = '$passed_token'";
+                                $db->query($news_sql);
+                            }
+                        return json_encode(array("s" => '1',"i" => get_user_infos(array("t" => $passed_token)),"v" => array("e" => $new_email_bool,"n" => $new_nick_name_bool,"p" => $new_password_bool,"c" => $new_country_bool)));
+                    }
+            }
+        else
+            {
+                return json_encode(array("s" => '002'));
+            }
+    }
+    else
+    {
+        return json_encode(array("s" => '001'));
+    }
+}
+
+function get_last_reporters()
+{
+    global $db;
+    if(empty($db))
+        $db = new db();
+    
+    $result = array("s"=>"","r" => array());
+    $last_reporters_sql = "select UserId as user_id,UserPic as user_pic,NickName as user_nickname,concat(UserName,' ',FamName) as user_full_name,Points as user_points from users Order By Points desc limit 0,10";
+    $last_reporters_res = $db->get_results($last_reporters_sql);
+    if(count($last_reporters_res) > 0)
+        {
+            $result["s"] = '1';
+            $index = 0;
+            foreach($last_reporters_res as $reporter_row)
+                {
+                    $result["r"][$index] = array("f" => $reporter_row->user_full_name,"i" => $reporter_row->user_id,"n" => $reporter_row->user_nickname,"p" => $reporter_row->user_pic,"pt" => $reporter_row->user_points);
+                    $index++;
+                }
+        }
+    else
+        {
+            $result["s"] = '0';
+        }
+    return json_encode($result);
 }
 ?>

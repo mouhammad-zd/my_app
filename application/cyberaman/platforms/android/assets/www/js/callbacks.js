@@ -92,6 +92,11 @@ function handle_login_response(data,target)
                     {
                         control_aside_as('user');
                     }
+                warn_user(target,'',0,0);
+                 $.ui.goBack();
+                g_token = data.t;
+                localStorage.setItem("token",g_token);
+                store_user_infos(data.i);
             }
         else
             {
@@ -141,10 +146,10 @@ function fill_news(data,put_in,is_more,place)
                             if(row_obj.epic !== 'newspaper.png')
                                 {
                                     news_image_tp = tp_news_image;
-                                    news_image_tp.replaceArray(['{n_u}','{n_i}','{g_w}','{n_p}'],[]);
+                                    news_image_tp = news_image_tp.replaceArray(["{n_u}","{n_i}","{g_w}","{n_p}"],[urgent_class,row_obj.eid,g_web_link,row_obj.epic]);
                                 }
 
-                            news_tp.replaceArray(['{b_c}','{n_a}','{n_u}','{n_i}','{n_t}','{n_p}'],[background_color,news_agency,urgent_class,row_obj.eid,row_obj.etitle,news_image_tp]);
+                            news_tp = news_tp.replaceArray(["{b_c}","{n_a}","{n_u}","{n_i}","{n_t}","{n_p}"],[background_color,news_agency,urgent_class,row_obj.eid,row_obj.etitle,news_image_tp]);
                             row_obj.childs = news_tp;
                             last_date = row_obj.edate;
                             last_id = row_obj.eid;
@@ -190,7 +195,7 @@ function fill_news(data,put_in,is_more,place)
                                                         more_label = languages[g_language]['news_reporter_more_label'] + reporter_name;
                                                     else
                                                         more_label = languages[g_language]['news_cat_more_label'] + category_name;
-                                                    news_more_tp.replaceArray(['{n_c}','{n_u}','{l_d}','{n_c}','{n_i}','{m_l}'],[ecat,row_obj.eurgent,last_date,ecat,row_obj.eid,more_label]);
+                                                    news_more_tp = news_more_tp.replaceArray(['{n_c}','{n_u}','{l_d}','{n_c}','{n_i}','{m_l}'],[ecat,row_obj.eurgent,last_date,ecat,row_obj.eid,more_label]);
                                                     row_obj.childs = news_more_tp;
                                                 }
                                         }

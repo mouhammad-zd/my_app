@@ -1,0 +1,44 @@
+<div class="panel" id="contactus_page" data-footer="none">
+    <div class="page_wrapper_div" id="contactus_wrapper_div">
+        <div class="contactus_label_div">
+            <label class="contactus_label">الإسم الكامل</label>
+            <input type="text" id="contactus_name_txt" value="" class="contactus_input" />
+        </div>
+        <div class="contactus_input_div">
+            <label class="contactus_label">: الإيميل</label>
+            <input type="text" id="contactus_email_txt" value="" class="contactus_input" />
+        </div>
+        <div class="contactus_input_div">
+            <label class="contactus_label special"><img src="images/loading1.gif" width="16" id="contactus_departments_loading_img" /> المكتب الذي تريد الاتصال به</label>
+            <span id="contactus_departments_span" style="display: inline-block !important;float: right !important;"></span>
+        </div>
+        <div class="contactus_label_div">
+            <label class="contactus_label">: طبيعة الإتصال</label>
+            <div class="rfloat" style="overflow: hidden;width:20%;">
+                <input type="radio" id="problem_radio" name="contactus_reason_radio" value="complaint" />
+                <label for="problem_radio">شكوى</label>
+            </div>
+            <div class="rfloat" style="overflow: hidden;width:20%;">
+                <input type="radio" id="suggest_radio" name="contactus_reason_radio" value="suggestion" />
+                <label for="suggest_radio">اقتراح</label>
+            </div>
+            <div class="rfloat" style="overflow: hidden;width:20%;">
+                <input type="radio" id="question_radio" name="contactus_reason_radio" value="question" />
+                <label for="question_radio">سؤال</label>
+            </div>
+        </div>
+        <div class="contactus_label_div">
+            <label class="contactus_label">الرسالة</label>
+            <textarea class="contactus_area" rows="6" id="contactus_message_area"></textarea>
+        </div>
+        <div class="contactus_captcha_wrapper_div" style="width: 100% !important;">
+            <input type="number" id="contactus_captcha_result_txt" class="lfloat" style="width: 65% !important;" />
+        </div>
+        <div class="contactus_input_div" style="width: 100% !important;">
+            <input type="button" value="أرسل  >" id="contactus_send_btn" style="border:solid 1px #cccccc;direction: rtl;padding:15px;width:100%;text-align:center;background: white;color:gray;" />
+        </div>
+        <script type="text/javascript">
+            open_contactus_page();
+        </script>
+    </div>
+</div>

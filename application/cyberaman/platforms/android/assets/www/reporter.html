@@ -1,5 +1,5 @@
-<div id="account_page" class="panel" data-footer='none'>
-    <div id="account_wrapper_div" class="page_wrapper_div padded">
+<div class="panel" id="reporter_page" data-footer="none">
+    <div class="page_wrapper_div" id="reporter_wrapper_div">
         <div class="account_label_wrapper_div">
             <div id="account_image_div" class="rfloat acenter">
                 <img src='images/loading1.gif' style="display: inline-block;" class='rfloat' src="" alt='' id="account_image" />
@@ -12,15 +12,14 @@
                     للحصول على جائزة<br />
                 </a>
             </div>
-            <input type="button" id="account_image_btn" class="button btn account_btn rfloat" value="تغيير الصورة" />
         </div>
         <div class="account_input_div bordered_top">
             <label for="account_nickname_txt" class="rfloat">: الإسم المستخدم</label>
-            <input id="account_nickname_txt" class="account_input editable acenter unselected" type="text" value="" />
+            <input id="account_nickname_txt" class="account_input acenter unselected" readonly="readonly" type="text" value="" />
         </div>
         <div class="account_input_div bordered_top">
             <label for="account_email_txt" class="rfloat">: الإيميل</label>
-            <input id="account_email_txt" class="account_input editable acenter unselected" type="text" value="" />
+            <input id="account_email_txt" class="account_input acenter unselected" readonly="readonly" type="text" value="" />
         </div>
         <div class="account_input_div bordered_top">
             <label class="rfloat">: الهاتف</label>
@@ -31,15 +30,8 @@
             <span id="account_country_span"></span>
             <input type="text" id="account_country_txt" class="account_input acenter unselected" readonly="readonly" value="" />
         </div>
-        <div class="account_btn_div acenter">
-            <input type="button" class="button btn account_btn" id="account_password_btn" value="تغيير كلمة السر" />
-            <input type="password" id="account_password_txt" />
-        </div>
-        <div class="account_btn_div acenter">
-            <input type="button" id="account_save_btn" class="button btn account_btn" value="<    حفظ" />
-        </div>
         <script type="text/javascript">
-            open_account_page();
+            open_reporter_page();
         </script>
     </div>
 </div>

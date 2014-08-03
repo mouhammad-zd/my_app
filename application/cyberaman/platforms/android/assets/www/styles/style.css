@@ -1,4 +1,4 @@
-*
+a,input[type="button"],input[type="submit"]
 {
     -webkit-tap-highlight-color: #e9e9e9;
 }
@@ -62,13 +62,13 @@ a
 
 .lfloat
 {
-    float: left;
+    float: left !important;
     margin-right: 1%;
 }
 
 .rfloat
 {
-    float: right;
+    float: right !important;
     margin-left: 1%;
 }
 
@@ -98,6 +98,14 @@ a
 .visible
 {
     display: block;
+}
+
+.captcha
+{
+    display:inline-block;
+    line-height:40px;
+    text-align: right;
+    float: right;
 }
 
 #header a
@@ -200,7 +208,7 @@ aside .icon
 #warning_header
 {
     display: none;
-    background: #aaaaaa;
+    background: black;
     position: fixed;
     width: 108%;
     height: 46px;
@@ -210,7 +218,34 @@ aside .icon
     z-index: 9999999;
 }
 
+#warning_footer
+{
+    display: none;
+    background: black;
+    position: fixed;
+    width: 108%;
+    height: 46px;
+    bottom: 0px;
+    right: 0px;
+    left: 0px;
+    z-index: 9999999;
+}
+
+#warning_header img,#warning_footer img
+{
+    height: 40px;
+    vertical-align: middle;
+}
+
 .app_header
+    {
+        text-align: center;
+        line-height: 40px;
+        font-size: 20px;
+        color: white;
+    }
+
+.app_footer
     {
         text-align: center;
         line-height: 40px;
@@ -240,11 +275,109 @@ aside .icon
     border: solid 1px #aaaaaa;
 }
 
+.page_wrapper_div.padded
+{
+    padding: 10px !important;
+}
+/* Contact us page styles */
+
+.contactus_label
+{
+    float: right !important;
+    color: black !important;
+}
+
+.contactus_label.special
+{
+    width:100px !important;
+}
+
+.contactus_label_div
+    {
+        line-height: 20px;
+        margin-top:1px !important;
+        overflow: hidden;
+        font-size: 16px;
+    }
+.contactus_input_div
+    {
+        line-height: 20px;
+        margin-top:3px !important;
+        overflow: hidden;
+        font-size: 16px;
+    }
+
+#contactus_departments_sel
+{
+    width: 65% !important;
+    float: right;
+    overflow: hidden;
+    height: 40px;
+    line-height: 20px;
+    font-size: 16px;
+}
+
+#contactus_departments_loading_img
+{
+    vertical-align: bottom;
+}
+
+/* Account page styles */
+
+#account_image_div
+{
+    width: 128px;
+    text-align: center;
+}
+
+.account_input_div,.account_btn_div,.account_label_wrapper_div
+{
+    line-height: 16px;
+    margin-top:0px !important;
+    font-size: 16px;
+    width: 100%;
+    overflow: hidden;
+    padding-top: 10px !important;
+}
+
+.bordered_top
+    {
+        border-top: solid 1px #cccccc;
+    }
+
+.account_input
+    {
+        width: auto !important;
+        padding-left: 10px !important;
+        padding-right: 10px !important;
+    }
+.account_btn
+{
+    width: 100% !important;
+    font-size: 19px;
+}
+    
+.account_input.editable.selected
+{
+    border: solid 1px #cccccc !important;
+    box-shadow: 0px 0px 1px 1px #cccccc !important;
+}
+
+.account_input.unselected
+{
+    border: none !important;
+    box-shadow: none !important;
+}
 /* Registration page styles */
+.reg_btn
+{
+    width: 100%;
+}
+
 .reg_label
     {
         float: right !important;
-        color: red !important;
+        color: black !important;
     }
 
 .reg_label_help_img
@@ -272,7 +405,7 @@ aside .icon
     float: left;
     overflow: hidden;
     height: 40px;
-    line-height: 40px;
+    line-height: 20px;
 }
 
 #reg_country_sel
@@ -281,7 +414,7 @@ aside .icon
     float: left;
     overflow: hidden;
     height: 40px;
-    line-height: 40px;
+    line-height: 20px;
     font-size: 20px;
 }
 
@@ -292,9 +425,82 @@ aside .icon
         font-size: 20px;
     }
 
+/* Style for login page */
+
+.login_label
+    {
+        float: right !important;
+        color: black !important;
+    }
+
+.login_label_help_img
+    {
+        line-height: 20px !important;
+        vertical-align: bottom;
+    }
+
+.login_input_label_wrapper_div
+    {
+        line-height: 20px;
+        margin-top:1px !important;
+        overflow: hidden;
+    }
+.login_input_wrapper_div
+    {
+        line-height: 20px;
+        margin-top:3px !important;
+        overflow: hidden;
+    }
+
+/* Style for news sender page */
+
+.news_sender_label_div,.news_sender_input_div,.news_sender_btn_div
+    {
+        line-height: 20px;
+        margin-top:0px !important;
+        font-size: 16px;
+        width: 100% !important;
+        overflow: hidden;
+        padding-top: 10px !important;
+    }
+
+.news_sender_btn_div
+    {
+        text-align: center;
+    }
+.news_sender_input
+{
+    width: 100%;
+    padding-left: 10px !important;
+    padding-right: 10px !important;
+}
+
+.news_sender_input.special
+    {
+        width: auto !important;
+    }
+.news_sender_label
+{
+    display: inline-block !important;
+    height:30px !important;
+    line-height: 20px !important;
+    width: auto !important;
+    float: right !important;
+    text-align: right !important;
+
+}
+
+.news_sender_btn.fill
+{
+    width: 100%;
+    height: 40px;
+    line-height: 20px;
+    font-size: 16px;
+}
+
 /* Style for news page of unlogged user */
 
-#last_news_unlogged_in_page,#news_unlogged_in_page,#category_news_unlogged_in_page,#settings_page
+#news_page,#news_unlogged_in_page,#category_news_unlogged_in_page,#settings_page
 {
     background: white !important;
     font-size: 18px;
@@ -302,14 +508,14 @@ aside .icon
     padding: 0px !important;
 }
 
-#news_unlogged_in_wrapper_div,#category_news_unlogged_in_wrapper_div,#settings_wrapper_div
+#news_wrapper_div,#category_news_unlogged_in_wrapper_div,#settings_wrapper_div
 {
     width: 100%;
     margin: 0px auto;
     overflow: hidden;
 }
 
-#news_unlogged_in_wrapper_div ul,#category_news_unlogged_in_wrapper_div ul
+#news_wrapper_div ul,#category_news_unlogged_in_wrapper_div ul
 {
     direction: rtl;
     list-style: none;

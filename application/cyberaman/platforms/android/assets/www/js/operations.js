@@ -27,7 +27,6 @@ function control_aside_as(mode)
                         $('#aside_new_account_link').show();
                         $('#aside_account_link').hide();
                         $('#aside_settings_link').hide();
-                        $('#aside_sendnews_link').hide();
                         $('#aside_auditnews_link').hide();
                         break;
                     }
@@ -234,13 +233,13 @@ function validate_user_name(input_element,callback)
 function upload(type,location,hidden_input,upl_success_callback,upl_error_callback,error_callback)
 	{
             // Retrieve image file location from specified source
-            if(type === 'news_pic' || type === 'user_pic')
+            if(type === 'news_pic' || type === 'user_pic' || type === 'already_user_pic')
                 {
                     var params = { quality: 50,destinationType: navigator.camera.DestinationType.FILE_URI,sourceType: navigator.camera.PictureSourceType.PHOTOLIBRARY };
                 }
             else
                 {
-                    var params = { quality: 50,destinationType: navigator.camera.DestinationType.FILE_URI,sourceType: navigator.camera.PictureSourceType.PHOTOLIBRARY,mediaType : navigator.camera.fileMediaType.ALLMEDIA};
+                    var params = { quality: 50,destinationType: navigator.camera.DestinationType.FILE_URI,sourceType: navigator.camera.PictureSourceType.PHOTOLIBRARY,mediaType : navigator.camera.MediaType.VIDEO};
                 }
             navigator.camera.getPicture(function(imageURI){upload_to(type,location,hidden_input,imageURI,upl_success_callback,upl_error_callback)},error_callback,params);
 	}
@@ -281,6 +280,13 @@ function upload_to(type,location,hidden_input,imageURI,success_callback,error_ca
                                 options.mimeType="text/plain";
                                 break;
                             }
+                         case 'already_user_pic':
+                            {
+                                upload_location = encodeURI(g_web_link + "Programs/api/upload_user_pic.php?t=" + g_token);
+                                options.fileName=file_name.substr(file_name.lastIndexOf('/')+1);
+                                options.mimeType="text/plain";
+                                break;
+                            }
                     }
                 options.params.fileName = options.fileName ;
 
@@ -309,6 +315,97 @@ function get_all_countries(select_element)
               );
         select_element.append(country_option);
     }
+    
+// This function will fetch an array of object returned from an ajax request
+// and fill the jquery select element object with fecthed data
+// Need Review
+function get_all_departments(select_element,departments)
+    {
+        var department_option = '<option value="-1">' + languages[g_language]['contactus_choose_department'] + '</option>';
+        $.each(departments,
+                function(index,element)
+                    {
+                        department_option += '<option value="' + element.i + '">' + element.n + '</option>';
+                    }
+              );
+        select_element.append(department_option);
+    }
+    
+// This function will fetch an array of object returned from an ajax request
+// and fill the jquery select element object with fecthed data
+// Need Review
+function get_all_categories(select_element,categories)
+    {
+        var category_option = '<option value="-1">' + languages[g_language]['news_sender_choose_category'] + '</option>';
+        $.each(categories,
+                function(index,element)
+                    {
+                        category_option += '<option value="' + element.i + '">' + element.n + '</option>';
+                    }
+              );
+        select_element.append(category_option);
+    }
+
+// This function will fetch an array of object returned from an ajax request
+// and fill the jquery select element object with fecthed data
+// Need Review
+function get_all_agencies(select_element,agencies)
+    {
+        var agency_option = '<option value="-1">' + languages[g_language]['news_sender_choose_agency'] + '</option>';
+        $.each(agencies,
+                function(index,element)
+                    {
+                        agency_option += '<option value="' + element.i + '">' + element.n + '</option>';
+                    }
+              );
+        select_element.append(agency_option);
+    }
+    
+// This function will send news
+function send_news()
+{
+    if(!validate_input('#news_sender_details_area',0))
+        {
+            warn_user('#warning_footer',languages[g_language]['news_sender_enter_details'],0,4000);
+            return false;
+        }
+    if($('#news_sender_categories_sel').val() === "-1")
+        {
+            warn_user('#warning_footer',languages[g_language]['news_sender_choose_category'],0,4000);
+            return false;
+        }
+    if(g_role !== 2 && $('#news_sender_agencies_sel').length > 0)
+        {
+            warn_user('#warning_footer',languages[g_language]['news_sender_not_admin'],0,4000);
+            return false;
+        }
+    if($('#news_sender_agencies_sel').length > 0 && $('#news_sender_agencies_sel').val() === "-1")
+        {
+            warn_user('#warning_footer',languages[g_language]['news_sender_choose_agency'],0,4000);
+            return false;
+        }
+    var i = {};
+    if((g_role === 1 || g_role === 2) && g_token !== "")
+        i['t'] = g_token;
+    i['c'] = $('#news_sender_details_area').val();
+    i['a'] = $('#news_sender_agencies_sel').val();
+    i['ca'] = $('#news_sender_categories_sel').val();
+    i['l'] = g_language;
+    if($('#news_sender_images_hidden').length > 0 && $('#news_sender_images_hidden').val() !== "")
+        i['i'] = $('#news_sender_images_hidden').val();
+    if($('#news_sender_videos_hidden').length > 0 && $('#news_sender_videos_hidden').val() !== "")
+        i['v'] = $('#news_sender_videos_hidden').val();
+    if(g_role === 2 && g_token !== "")
+        {
+            if($('#news_sender_urgent_chk').is(':checked'))
+                i['u'] = 1;
+            else
+                i['u'] = 0;
+        }
+    if($('#news_sender_title_txt').val() !== "")
+        i['ti'] = $('#news_sender_title_txt').val();
+    var data = {op : 'sn',i : i};
+}
 
 // This function will send data to be registered
 // When response is returned from server a functiion named "handle_registration_response" in "callbacks.js" will be called
@@ -368,7 +465,7 @@ function register_me()
         data['i']['a'] = "";//This will be android id (empty while registration)
         data['i']['ap'] = "";//This will  be apple id (empty while registration)
 
-        warn_user('#warning_header',languages[g_language]['reg_sending_data'] + '<img src="images/loading1.gif" style="vertical-align:medium;width:20px;" />',1,0);
+        warn_user('#warning_header',languages[g_language]['reg_sending_data'],1,0);
         var request = $.ajax({
                                 url : g_api_link,
                                 data : data,
@@ -383,7 +480,7 @@ function register_me()
 // Need Review
 function login_me()
     {
-        var warning_target = '#login_footer';
+        var warning_target = '#warning_header';
         if(!validate_input($('#login_nickname_txt'),0))
             {
                 warn_user(warning_target,languages[g_language]["login_enter_nickname"],0,10000);
@@ -397,17 +494,17 @@ function login_me()
         var data = {};
         data['op'] = 'l';
         data['i'] = {};
-        data['i']['u'] = $('#login_enter_nickname').val();//This will be user name
-        data['i']['p'] = $('#login_enter_password').val();//This will be user password
+        data['i']['u'] = $('#login_nickname_txt').val();//This will be user name
+        data['i']['p'] = $('#login_password_txt').val();//This will be user password
         data['i']['d'] = device.uuid;
-        $(warning_target).html(languages[g_language]['login_sending_data'] + '<img src="images/loading1.gif" style="vertical-align:medium;width:20px;" /> ');
+        warn_user(warning_target,languages[g_language]['login_sending_data'],1,0);
         var request = $.ajax({
                                 url : g_api_link,
                                 data : data,
                                 dataType : "json",
                                 type : "POST",
                                 success : function(data){handle_login_response(data,warning_target);}, //success handler that will parse server response and take suitable actions if infos are valid or warn user if invalid infos
-                                error : function(data){warn_user('#login_footer',languages[g_language]['login_authentication_error'],0,10000);}
+                                error : function(data){warn_user(warning_target,languages[g_language]['login_authentication_error'],0,10000);}
                              });
     }
 
@@ -437,6 +534,7 @@ function get_news()
         i['c'] = '';
         i['ln'] = g_last_news;
         i['u'] = g_just_urgent;
+        i['a'] = '';
         
         var data = {op : 'g',i : i};
         var request = $.ajax({
@@ -447,7 +545,7 @@ function get_news()
                               timeout : 10000,
                               success : function(data)
                                 {
-                                    news_has_been_loaded(data,'#news_unlogged_in_wrapper_div ul',0,'append');//success handler that will handle getted news and insert them to DOM
+                                    fill_news(data,'#news_wrapper_div ul',0,'append');//success handler that will handle getted news and insert them to DOM
                                 },
                               error : function(data)
                                 {
@@ -479,10 +577,15 @@ function warn_user(input_element,msg,persist,timeout)
         if(typeof timeout === null || timeout === "" || timeout === null)
             timeout = 5000;
         if(persist === 1)
-            $(input_element).html(msg);
+            {
+                $(input_element).find('img').show();
+                $(input_element).find('span').html(msg);
+            }
         else
             {
-                $(input_element).html(msg).show();
+                $(input_element).find('img').hide();
+                $(input_element).find('span').html(msg);
+                $(input_element).show();
                 setTimeout(function(){$(input_element).hide();},timeout);
             }
     }
@@ -530,3 +633,198 @@ function exit_application()
     {
         navigator.app.exitApp();
     }
+    
+function load_page(page_name,page_parameters)
+    {
+        var page_new_tab = page_parameters[0];
+        var page_back = page_parameters[1];
+        var page_transition = page_parameters[2];
+        var page_add_to_dom = page_parameters[3];
+        
+        $.ui.loadContent(page_name,page_new_tab,page_back,page_transition,page_add_to_dom);
+    }
+    
+function contactus_send_email()
+    {
+        if($('#contactus_email_txt').length <= 0 || $('#contactus_email_txt').val() === "")
+            {
+                warn_user('#warning_header',languages[g_language]['contactus_enter_email'],0,4000);
+                $.ui.scrollToTop('#contactus_email_txt');
+                return false;
+            }
+        if(!is_valid_email_format('#contactus_email_txt'))
+            {
+                warn_user('#warning_header',languages[g_language]['contactus_enter_valid_email'],0,4000)
+                return false;
+            }
+        if($('#contactus_name_txt').length <= 0 || $('#contactus_name_txt').val() === "")
+            {
+                warn_user('#warning_header',languages[g_language]['contactus_enter_fullname'],0,4000)
+                return false;
+            }
+
+        if($('#contactus_departments_sel option').length > 1)
+            {
+                if($('#contactus_departments_sel').val() == "-1")
+                    {
+                        warn_user('#warning_header',languages[g_language]['contactus_select_department'],0,4000)
+                        return false;
+                    }
+            }
+        if(typeof($('input[name="contactus_reason_radio"]:checked').val()) === "undefined")
+            {
+                warn_user('#warning_header',languages[g_language]['contactus_choose_reason'],0,4000)
+                return false;
+            }
+            
+        if($('#contactus_message_area').length <= 0 || $('#contactus_message_area').val() === "")
+            {
+                warn_user('#warning_header',languages[g_language]['contactus_enter_message'],0,4000)
+                return false;
+            }
+        if($('#contactus_captcha_result_txt').val() === localStorage.getItem("answer"))
+            {
+                warn_user('#warning_header',languages[g_language]['contactus_sending_message'],1,0);
+                var i = {};
+                i['d'] = $('#contactus_departments_sel').val();
+                i['e'] = $('#contactus_email_txt').val();
+                i['f'] = $('#contactus_name_txt').val();
+                i['l'] = g_language;
+                i['m'] = $('#contactus_message_area').val();
+                i['r'] = $('input[name="contactus_reason_radio"]:checked').val();
+                i['t'] = g_token;
+                i['c'] = $('#contactus_captcha_result_txt').val();
+                var data = {op : 'c',i : i};
+                $.ajax({url : g_api_link,data : data,dataType:'json',type : 'POST',
+                        success : function(data)
+                            {
+                                if(data.s === '1')
+                                    {
+                                        warn_user('#warning_header',languages[g_language]['contactus_message_sended'],1,0);
+                                        generate_captcha(data.n1,data.n2);
+                                    }
+                                else if(data.s === '001')
+                                    {
+                                    
+                                    }
+                                else if(data.s === '002')
+                                    {
+                                    
+                                    }
+                                else if(data.s === '003')
+                                    {
+                                        
+                                    }
+                                else if(data.s === '004')
+                                    {
+                                        warn_user('#warning_header',languages[g_language]['contactus_enter_message'],0,4000);
+                                    }
+                                else if(data.s === '005')
+                                    {
+                                        warn_user('#warning_header',languages[g_language]['contactus_message_error'],0,4000);
+                                        generate_captcha(data.n1,data.n2);
+                                    }
+                                else if(data.s === '006')
+                                    {
+                                        warn_user('#warning_header',languages[g_language]['contactus_error_captcha'],0,5000);
+                                        generate_captcha(data.n1,data.n2);
+                                    }
+                            },
+                        error : function(error){warn_user('#warning_header','',0,0);alert(error);alert(error.responseText);}
+                    })
+            }
+        else
+            {
+                warn_user('#warning_header',languages[g_language]['contactus_error_captcha'],0,5000);
+            }
+    }
+    
+function store_user_infos(i)
+{
+    g_user.c = i.c;
+    g_user.e = i.e;
+    g_user.f = i.f;
+    g_user.i = i.i;
+    g_user.n = i.n;
+    g_user.p = i.p;
+    g_user.pt = i.pt;
+    g_user.co = i.co;
+}
+
+function save_user_infos()
+{
+    var i = {};
+    if(!validate_input('#account_nickname_txt',0))
+        {
+            warn_user('#warning_header',languages[g_language]['account_enter_nickname'],0,2000);
+            return false;
+        }
+    i['n'] = $('#account_nickname_txt').val();
+    if(!validate_input('#account_email_txt',0))
+        {
+            warn_user('#warning_header',languages[g_language]['account_enter_email'],0,2000);
+            return false;
+        }
+    i['e'] = $('#account_email_txt').val();
+    if($('#account_password_txt').css('display') !== 'none' && !validate_input('#account_password_txt',0))
+        {
+            warn_user('#warning_header',languages[g_language]['account_enter_password'],0,2000);
+            return false;
+        }
+    if($('#account_password_txt').css('display') !== 'none')
+        i['p'] = $('#account_password_txt').val();
+    if($('#account_country_sel').length > 0 && $('#account_country_sel').val() == -1)
+        {
+            warn_user('#warning_header',languages[g_language]['account_choose_country'],0,4000);
+            return false;
+        }
+    if($('#account_country_sel').length > 0 && $('#account_country_sel').val() !== -1)
+        i['c'] = $('#account_country_sel').val();
+    
+    warn_user('#warning_header',languages[g_language]['account_saving_infos'],1,0);
+
+    i['t'] = g_token;
+    var data = {op : 's_u_i',i : i};
+    $.ajax({url : g_api_link,data : data,type : 'POST',dataType : 'json',
+            success : function(data)
+                        {
+                            console.log("returned_result : " + data.s);
+                            if(data.s === '1')
+                                {
+                                    if(data.v.e === '1' || data.v.n === '1' || data.v.p === '1' || data.v.c === '1')
+                                        {
+                                            warn_user('#warning_header','<img src="images/check.png" />' + languages[g_language]['account_infos_saved'],0,4000);
+                                            store_user_infos(data.i);
+                                        }
+                                    else
+                                        {
+                                            if(data.v.e === 3)
+                                                warn_user('#warning_header',languages[g_language]['account_choose_another_email'],0,4000);
+                                            else if(data.v.n === 3)
+                                                warn_user('#warning_header',languages[g_language]['account_choose_another_nickname'],0,4000);
+                                            else if(data.v.p === 3)
+                                                warn_user('#warning_header',languages[g_language]['account_enter_password'],0,4000);
+                                            else if(data.v.c === 3)
+                                                warn_user('#warning_header',languages[g_language]['account_choose_country'],0,4000);
+                                        }
+                                }
+                            else if(data.s === '001')
+                                {
+                                    warn_user('#warning_header',languages[g_language]['account_infos_not_saved'],0,4000);
+                                }
+                            else if(data.s === '002')
+                                {
+                                    warn_user('#warning_header',languages[g_language]['account_unsufficient_privileges'],0,4000);
+                                }
+                            else if(data.s === '003')
+                                {
+                                    warn_user('#warning_header',languages[g_language]['account_infos_saved'],0,4000);
+                                }
+                        },
+            error : function(error)
+                        {
+                            console.log(error);
+                            console.log(error.responseText);
+                        }
+            });
+}

@@ -17,3 +17,8 @@ var tp_news_more = '<div class="more_news_div_{n_c}"></div>' +
                         '<a href="#" class="news_more_link" style="text-decoration:none;line-height:35px;" data-urgent="{n_u}" data-date="{l_d}" data-cat="{n_c}" data-id="{n_i}">'+
                             '<div class="news_category_footer">{m_l}</div>'+
                         '</a>';
+                
+var tp_last_reporter = '<div class="reporter_div" style="width: 100%;overflow: hidden;">' + 
+                            '<div class="reporter_image rfloat" data-id="{r_i}"><img src="{r_p}" /></div>' + 
+                            '<div class="reporter_infos_div rfloat">{r_n}<br />{r_f}<br />{r_pt}</div>' +
+                        '</div>';

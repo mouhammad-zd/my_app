@@ -93,6 +93,10 @@ if (isset($_FILES['upl']) && $_FILES['upl']['error'] == 0)
             }
         if (move_uploaded_file($_FILES['upl']['tmp_name'], $path_upload . '/' . $initial_uploaded_file_name))
             {
+                if($token !== "")
+                    {
+                        $db->query("update users set UserPic = 'uploads/users/$user_name/avatar_128.$extension' where NickName = '$user_name'");
+                    }
                 if ($amazone_s3)
                     {
                         move_file_to_cloud_s3($path_upload . '/' . $initial_uploaded_file_name);

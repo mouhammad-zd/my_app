@@ -1,0 +1,53 @@
+<div class="panel" id="news_sender_page" data-footer="none">
+    <div class="page_wrapper_div" id="news_sender_wrapper_div">
+        <div class="news_sender_label_div">
+            <h1>
+                <label class="news_sender_label">
+            شارك خبرك مع من تحب         . ضع الخبر في الخانة التالية
+                </label>
+            </h1>
+        </div>
+        <div class="news_sender_input_div">
+            <textarea id="news_sender_details_area" rows="5"></textarea>
+        </div>
+        <div class="news_sender_input_div">
+            <span id="news_sender_categories_span"></span>
+        </div>
+        <div class="news_sender_btn_div">
+            <input type="button" class="button btn news_sender_btn fill" value="إضافة فيديو" id="news_sender_add_video_btn" />
+            <input type="hidden" id="news_sender_videos_hidden" />
+            <input type="button" class="button btn news_sender_btn fill" value="إضافة صور" id="news_sender_add_picture_btn" />
+            <input type="hidden" id="news_sender_images_hidden" />
+        </div>
+        <div class="news_sender_label_div">
+            <label class="news_sender_label">هل تريد إضافة عنوان للخبر</label>
+        </div>
+        <div class="news_sender_input_div">
+            <input type="text" class="news_sender_input" id="news_sender_title_txt" />
+        </div>
+        <div class="news_sender_label_div admin">
+            <input type="checkbox" class="news_sender_input" id="news_sender_urgent_chk" />
+            <label for="news_sender_urgent_chk" class="news_sender_label">هذا الخبر عاجل</label>
+        </div>
+        <div class="news_sender_input_div admin">
+            <label class="news_sender_label">
+                المصدر
+            </label>
+            <span id="news_sender_agencies_span"></span>
+        </div>
+        <div class="news_sender_label_div">
+            <input type="number" class="news_sender_input special" id="news_sender_captcha_txt" value="" />
+            <span id="news_sender_captcha_span" class="captcha"></span>
+        </div>
+        <div class="news_sender_btn_div">
+            <input type="button" id="news_sender_send_btn" class="button btn news_sender_btn fill" value="أرسل خبرك" />
+        </div>
+        <div class="app_footer" id="warning_footer">
+            <img src="images/loading1.gif" id="warning_footer_img" />
+            <span id="warning_header_span"></span>
+        </div>
+        <script type="text/javascript">
+            open_news_sender_page();
+        </script>
+    </div>
+</div>

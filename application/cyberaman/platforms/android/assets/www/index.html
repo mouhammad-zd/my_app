@@ -15,21 +15,22 @@
         <link rel="stylesheet" type="text/css" href="appframework/plugins/css/af.selectBox.css" />
         <script type="text/javascript" charset="utf-8" src="appframework/plugins/af.selectBox.js"></script>
         <script type="text/javascript" charset="utf-8" src="appframework/plugins/af.passwordBox.js"></script>
-        <script type="text/javascript" charset="utf-8" src="appframework/plugins/af.touchLayer.js"></script>
-        <script type="text/javascript" charset="utf-8" src="appframework/plugins/af.touchEvents.js"></script>
         <script>
             if (!((window.DocumentTouch && document instanceof DocumentTouch) || 'ontouchstart' in window))
-            {
-                var script = document.createElement("script");
-                script.src = "appframework/plugins/af.desktopBrowsers.js";
-                var tag = $("head").append(script);
-            }
+                {
+                    var script = document.createElement("script");
+                    script.src = "appframework/plugins/af.desktopBrowsers.js";
+                    var tag = $("head").append(script);
+                    $.ui.autoLaunch = true;//We set this to true for dektop applications
+                }
+            else
+                {
+                    $.ui.autoLaunch = false;//By default, it is set to true and you're app will run right away.  We set it to false to show a splashscreen
+                }
         </script>
         <script type="text/javascript">
-            $.ui.backButtonText = " ";
             $.ui.useOSThemes = false;
             $.ui.splitview = false;//To don't show any menu by default and let showing them or hidding them due events
-            $.ui.autoLaunch = true; //By default, it is set to true and you're app will run right away.  We set it to false to show a splashscreen
             $.ui.overlayStatusbar = true;
             $.ui.resetScrollers = false;
             //$.ui.isAjaxApp=true;
@@ -48,12 +49,9 @@
     <body>
         <div id="afui">
             <div id="splashscreen" class='ui-loader'>
-                <div style="width: inherit;height: inherit;color: red;">
-                    <h1><br /><br /><br /><img src="images/home_logo.png" /></h1>
+                <div style="width: inherit;height: inherit;color: white;">
+                    <h1><br /><br /><br /><img src="images/home_logo.png" /></h1><br><h1>Cyber Aman</h1>
                 </div>
-            </div>
-            <div class="app_header" id="warning_header">
-
             </div>
             <div id="header">
                 <a href="#" class="icon refresh lfloat" id="refresh_link"> </a>
@@ -62,21 +60,21 @@
                 <a href="javascript:$.ui.toggleRightSideMenu()" class="menuButton rfloat"> </a>
             </div>
             <div id="content">
-                
+
             </div>
             <aside id="cyberaman_aside">
                 <div class='title'>&nbsp;</div>
                 <ul>
                     <li>
                         <a id="aside_new_account_link" href="register.html" data-persist-ajax="true" data-refresh-ajax="false" class="icon add mini">  حساب جديد</a>
-                        <a id="aside_account_link" class="icon mini"  style="padding-right: 15px;">  حسابي</a>
-                        <a id="aside_reporters_link" class="icon mini" style="padding-right: 15px;">  أفضل المراسلين</a>
+                        <a id="aside_account_link" href="account.html" class="icon mini"  style="padding-right: 15px;"  data-persist-ajax="true" data-refresh-ajax="false">  حسابي</a>
+                        <a id="aside_reporters_link" href="last_reporters.html" data-persist-ajax="true" data-refresh-ajax="false" class="icon mini" style="padding-right: 15px;">  أفضل المراسلين</a>
                         <a id="aside_settings_link" class="icon star mini">  تفضيلاتي</a>
-                        <a id="aside_sendnews_link" class="icon lamp mini">  أرسل خبر الآن</a>
+                        <a id="aside_sendnews_link" href="news_sender.html" data-persist-ajax="true" data-refresh-ajax="false" class="icon lamp mini">  أرسل خبر الآن</a>
                         <a id="aside_share_link" class="icon share mini" style="padding-right: 15px;">  شارك التطبيق مع أصدقاءك</a>
                         <a id="aside_rate_link" class="icon mini" style="padding-right: 15px;">  هل أعجبك التطبيق ؟</a>
                         <a id="aside_about_link" class="icon mini" style="padding-right: 15px;" href="about.html" data-persist-ajax="true" data-refresh-ajax="false">  حول سايبر أمان</a>
-                        <a id="aside_contactus_link" class="icon mini" style="padding-right: 15px;">  إتّصل بنا</a>
+                        <a id="aside_contactus_link" href="contact_us.html" data-persist-ajax="true" data-refresh-ajax="false" class="icon mini" style="padding-right: 15px;">  إتّصل بنا</a>
                         <a href="#" onclick="window.open('http://www.cyberaman.com', '_system');" class="acenter">
                             <img src="images/home_logo.png" style="max-width: 90%;" />
                         </a>
@@ -85,6 +83,10 @@
                     </li>
                 </ul>
             </aside>
+            <div class="app_header" id="warning_header">
+                <img src="images/loading1.gif" id="warning_header_img" />
+                <span id="warning_header_span"></span>
+            </div>
         </div>
     </body>
 </html>
